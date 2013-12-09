@@ -51,12 +51,15 @@ class PowerGadget:
             return ""
 
     def log(self, resolution, duration, filename):
-        if self._system == "Darwin" or self._sytem == "Windows":
+        if self._system == "Darwin":
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename + " > /dev/null")
-        else:
+        elif self._system == "Linux":
             os.system(self._path +  " -e " + str(resolution) + " -d " +
                       str(duration) + " > " + filename)
+        else:
+            os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
+                      str(duration) + " -file " + filename)
 
 def plot_signal(signal, sampling_frequency, interval, filename, title, show=False):
     sample_time = 1.0/sampling_frequency;
@@ -169,7 +172,7 @@ def main():
     parser= argparse.ArgumentParser(description="Plot Power Gadget's logs in time and frequency domain",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=75, type=int)
+    parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=60, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=2, type=int)
     parser.add_argument("-p", "--gadget_path", help="Intel's Power Gadget path", default="")
