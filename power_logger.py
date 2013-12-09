@@ -37,8 +37,8 @@ class PowerGadget:
             else:
                 raise Exception("Intel Power Gadget executable not found")
         elif self._system == "Windows":
-            if(shutil.which("PowerLog")):
-                self._path = "PowerLog"
+            if(shutil.which("PowerLog.exe")):
+                self._path = "PowerLog.exe"
             else:
                 raise Exception("Intel Power Gadget executable not found")
         else:
@@ -51,14 +51,12 @@ class PowerGadget:
             return ""
 
     def log(self, resolution, duration, filename):
-        if self._system == "Darwin":
+        if self._system == "Darwin" or self._sytem == "Windows":
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename + " > /dev/null")
-        elif self._system == "Linux":
+        else:
             os.system(self._path +  " -e " + str(resolution) + " -d " +
                       str(duration) + " > " + filename)
-        else:
-            raise Exception("Platform is not supported")
 
 def plot_signal(signal, sampling_frequency, interval, filename, title, show=False):
     sample_time = 1.0/sampling_frequency;
