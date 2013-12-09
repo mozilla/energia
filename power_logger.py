@@ -12,6 +12,7 @@ import re
 import shutil
 import sys
 import uuid
+import tempfile
 
 from datetime import datetime
 from scipy import pi
@@ -43,6 +44,12 @@ class PowerGadget:
         else:
             raise Exception("Platform is not supported.")
 
+    def get_temporary_path(self):
+        if self._system == "Darwin" or self._system == "Linux":
+            return "/tmp/"
+        else:
+            return ""
+
     def log(self, resolution, duration, filename):
         if self._system == "Darwin":
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
@@ -52,7 +59,6 @@ class PowerGadget:
                       str(duration) + " > " + filename)
         else:
             raise Exception("Platform is not supported")
-
 
 def plot_signal(signal, sampling_frequency, interval, filename, title, show=False):
     sample_time = 1.0/sampling_frequency;
@@ -123,21 +129,20 @@ def parse_signal(path, debug):
 
     return (signal, freq, joules)
 
-def collect_power_usage(powerlog, args):
-    joules = args.iterations * [None]
-    signals = args.iterations * [None]
+def collect_power_usage(powerlog, directory, resolution, duration, iterations, debug):
+    joules = iterations * [None]
+    signals = iterations * [None]
 
-    for i in range(0, args.iterations):
-        if args.debug:
+    for i in range(0, iterations):
+        if debug:
             print("Starting run", i)
 
-        report = args.report + "_" + str(i)
+        report = os.path.join(directory, "log_" + str(i))
+        powerlog.log(resolution, duration, report + ".log")
+        signals[i], freq, joules[i] = parse_signal(report + ".log", debug)
 
-        powerlog.log(args.resolution, args.duration, report + ".log")
-        signals[i], freq, joules[i] = parse_signal(report + ".log", args.debug)
-
-        if args.debug:
-            plot_signal(signals[i], freq, args.duration, report + ".png", "Run " + str(i))
+        if debug:
+            plot_signal(signals[i], freq, duration, report + ".png", "Run " + str(i))
 
     return signals, joules
 
@@ -148,7 +153,7 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
     return mean, h
 
-def display_nearest_plot(report, signals, joules, freq, duration, mean, range):
+def display_nearest_plot(directory, signals, joules, freq, duration, mean, range):
     min_dist = abs(joules[0] - mean)
     min_elem = 0
 
@@ -160,13 +165,12 @@ def display_nearest_plot(report, signals, joules, freq, duration, mean, range):
 
     title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
              format(mean, range, len(signals), duration, freq)
-    plot_signal(signals[min_elem], freq, duration, report + ".png", title, True)
+    plot_signal(signals[min_elem], freq, duration, os.path.join(directory, "report.png"), title, True)
 
 def main():
     parser= argparse.ArgumentParser(description="Plot Power Gadget's logs in time and frequency domain",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-r", "--report", help="The name of the report")
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=75, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=60, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=2, type=int)
@@ -182,23 +186,22 @@ def main():
         raise Exception("resolution has to be greater or equal to 50")
 
     powergadget = PowerGadget(args.gadget_path)
-
-    if not args.report:
-        args.report = str(uuid.uuid4())
-
-    frequency = 1000.0/args.resolution
     # use tmpfs on Linux to avoid periodic disk writes (doesn't happen on OSX and Windows)
-    directory = "/tmp/{}{:.2f}hz{}s".format(args.report, frequency, args.duration)
+    directory = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
+    frequency = 1000.0/args.resolution
 
     if os.path.exists(directory):
         shutil.rmtree(directory)
-
     os.makedirs(directory)
-    os.chdir(directory)
 
-    signals, joules = collect_power_usage(powergadget, args)
+    signals, joules = collect_power_usage(powergadget, directory, args.resolution, args.duration, args.iterations, args.debug)
     m, r = mean_confidence_interval(joules)
-    display_nearest_plot(args.report, signals, joules, frequency, args.duration, m, r)
+    display_nearest_plot(directory, signals, joules, frequency, args.duration, m, r)
+
+    if args.debug:
+        print("Logs saved to:", directory)
+    else:
+        shutil.rmtree(directory)
 
 
 if __name__ == "__main__":
