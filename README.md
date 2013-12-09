@@ -10,4 +10,6 @@ Power logger wraps Intel's Power Gadget providing a simple API and plotting faci
 
 ## Example usage as command line tool
 
+```
 python3 power_logger.py -e 50 -d 30 -i 5
+```
