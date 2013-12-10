@@ -13,11 +13,13 @@ import shutil
 import sys
 import uuid
 import tempfile
-
-from datetime import datetime
-from scipy import pi
+import functools
 
 class PowerGadget:
+    _osx_exec = "PowerLog"
+    _win_exec = "PowerLog.exe"
+    _lin_exec = "power_gadget"
+
     def __init__(self, path):
         self._system = platform.system()
 
@@ -27,28 +29,22 @@ class PowerGadget:
             else:
                 raise Exception("Intel Power Gadget executable not found")
         elif self._system == "Darwin":
-            if shutil.which("PowerLog"):
-                self._path = "PowerLog"
+            if shutil.which(PowerGadget._osx_exec):
+                self._path = PowerGadget._osx_exec
             else:
                 raise Exception("Intel Power Gadget executable not found")
         elif self._system == "Linux":
-            if(shutil.which("power_gadget")):
-                self._path = "power_gadget"
+            if shutil.which(PowerGadget._lin_exec):
+                self._path = PowerGadget._lin_exec
             else:
                 raise Exception("Intel Power Gadget executable not found")
         elif self._system == "Windows":
-            if(shutil.which("PowerLog.exe")):
-                self._path = "PowerLog.exe"
+            if shutil.which(PowerGadget._win_exec):
+                self._path = PowerGadget._win_exec
             else:
                 raise Exception("Intel Power Gadget executable not found")
         else:
             raise Exception("Platform is not supported.")
-
-    def get_temporary_path(self):
-        if self._system == "Darwin" or self._system == "Linux":
-            return "/tmp/"
-        else:
-            return ""
 
     def log(self, resolution, duration, filename):
         if self._system == "Darwin":
@@ -61,114 +57,153 @@ class PowerGadget:
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename)
 
-def plot_signal(signal, sampling_frequency, interval, filename, title, show=False):
-    sample_time = 1.0/sampling_frequency;
-    t = scipy.linspace(0, interval, len(signal))
-    fft = abs(scipy.fft(signal))
-    f = scipy.linspace(0, sampling_frequency/2.0, len(signal)/2.0)
+class Signal:
+    def __init__(self, joules, sequence, frequency, duration):
+        self._joules = joules
+        self._sequence = sequence
+        self._frequency = frequency
+        self._duration = duration
 
-    pylab.suptitle(title)
-    pylab.subplot(211)
-    pylab.title("Sample run")
-    pylab.plot(t, signal)
-    pylab.ylabel("Watt")
-    pylab.xlabel("time (sec)")
+    def get_joules(self):
+        return self._joules
 
-    pylab.subplot(212)
-    #don't plot the mean
-    pylab.plot(f[1:], 2.0/len(signal)*abs(fft[1:len(signal)//2]))
-    pylab.ylabel('amplitude')
-    pylab.xlabel('frequency (hz)')
-    pylab.savefig(filename)
-    if show:
-        pylab.show()
-    pylab.clf()
+    def get_sequence(self):
+        return self._sequence
 
-def parse_signal(path, debug):
-    signal = []
-    joules = 0
+    def get_frequency(self):
+        return self._frequency
 
-    with open(path) as f:
-        lines = f.readlines()
-        data = []
-        metadata = []
+    def get_duration(self):
+        return self._duration
 
-        # split in data and metadata
-        for iteration, line in enumerate(lines):
-            if line == "\n":
-                data = lines[1:iteration]
-                metadata = lines[iteration + 1:]
-                break
+    def get_length(self):
+        return len(self._sequence)
 
-        # parse metadata
-        regexp = re.compile('.*Processor Energy_0\s?\(Joules\)\s?=\s?(.*)')
-        for line in metadata:
-            line = line.strip()
+    def plot(self, filename, title, show=False):
+        length = self.get_length()
+        t = scipy.linspace(0, self._duration, len(self._sequence))
+        fft = abs(scipy.fft(self._sequence))
+        f = scipy.linspace(0, self._frequency/2.0, length/2.0)
 
-            m = regexp.match(line)
-            if m:
-                joules = float(m.group(1))
+        pylab.suptitle(title)
+        pylab.subplot(211)
+        pylab.title("Sample run")
+        pylab.plot(t, self._sequence)
+        pylab.ylabel("Watt")
+        pylab.xlabel("time (sec)")
 
-            if line and debug:
-                print(line)
+        pylab.subplot(212)
+        #don't plot the mean
+        pylab.plot(f[1:], 2.0/length*abs(fft[1:length//2]))
+        pylab.ylabel('amplitude')
+        pylab.xlabel('frequency (hz)')
+        pylab.savefig(filename)
 
-        # remove the first and last line which might have zero values
-        data = data[1:-1]
+        if show:
+            pylab.show()
+        pylab.clf()
 
-        fields1 = data[1].split(",")
-        fields2 = data[2].split(",")
-        ts = (abs(int(fields1[0].split(":")[-1]) - int(fields2[0].split(":")[-1]))//10)*10
+    @staticmethod
+    def parse(path, frequency, duration, debug=False):
+        signal = []
+        joules = 0
 
-        freq = int(1000.0/ts);
+        with open(path) as f:
+            lines = f.readlines()
+            data = []
+            metadata = []
 
-        for line in data:
-            fields = line.split(",")
-            signal.append(float(fields[4]))
+            # split in data and metadata
+            for iteration, line in enumerate(lines):
+                if line == "\n":
+                    data = lines[1:iteration]
+                    metadata = lines[iteration + 1:]
+                    break
 
-    assert(joules > 0)
-    assert(len(signal) > 0)
+            # parse metadata
+            regexp = re.compile('.*Processor Energy_0\s?\(Joules\)\s?=\s?(.*)')
+            for line in metadata:
+                line = line.strip()
 
-    return (signal, freq, joules)
+                m = regexp.match(line)
+                if m:
+                    joules = float(m.group(1))
 
-def collect_power_usage(powerlog, directory, resolution, duration, iterations, debug):
-    joules = iterations * [None]
-    signals = iterations * [None]
+                if line and debug:
+                    print(line)
 
-    for i in range(0, iterations):
-        if debug:
-            print("Starting run", i)
+            # remove the first and last line which might have zero values
+            data = data[1:-1]
+            for line in data:
+                fields = line.split(",")
+                signal.append(float(fields[4]))
 
-        report = os.path.join(directory, "log_" + str(i))
-        powerlog.log(resolution, duration, report + ".log")
-        signals[i], freq, joules[i] = parse_signal(report + ".log", debug)
+        assert(joules > 0)
+        assert(len(signal) > 0)
 
-        if debug:
-            plot_signal(signals[i], freq, duration, report + ".png", "Run " + str(i))
+        return Signal(joules, signal, frequency, duration)
 
-    return signals, joules
 
-def mean_confidence_interval(data, confidence=0.95):
-    mean = numpy.mean(data)
-    se = scipy.stats.sem(data)
-    n = len(data)
-    h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
-    return mean, h
+class PowerLogger:
+    def __init__(self, gadget_path, debug=False):
+        self._powergadget = PowerGadget(gadget_path)
+        self._debug = debug
 
-def display_nearest_plot(directory, signals, joules, freq, duration, mean, range):
-    min_dist = abs(joules[0] - mean)
-    min_elem = 0
+    def _create_tmp_dir(self):
+        directory = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
 
-    for index, joule in enumerate(joules):
-        dist = abs(joule - mean)
-        if dist < min_dist:
-            min_dist = dist
-            min_elem = index;
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+        os.makedirs(directory)
 
-    title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
-             format(mean, range, len(signals), duration, freq)
-    plot_signal(signals[min_elem], freq, duration, os.path.join(directory, "report.png"), title, True)
+        return directory
 
-def main():
+    def _remove_tmp_dir(self, directory):
+        if self._debug:
+            print("Logs saved to:", directory)
+        else:
+            shutil.rmtree(directory)
+
+    def _collect_power_usage(self, directory, resolution, frequency, duration, iterations):
+        signals = iterations * [None]
+
+        for i in range(0, iterations):
+            if self._debug:
+                print("Starting run", i)
+
+            report = os.path.join(directory, "log_" + str(i))
+            self._powergadget.log(resolution, duration, report + ".log")
+            signals[i] = Signal.parse(report + ".log", frequency, duration, self._debug)
+
+            if self._debug:
+                signals[i].plot(report + ".png", "Run " + str(i))
+
+        return signals
+
+    def _mean_confidence_interval(self, signals, confidence=0.95):
+        data = [signal.get_joules() for signal in signals]
+        mean = numpy.mean(data)
+        se = scipy.stats.sem(data)
+        n = len(data)
+        h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
+        return mean, h
+
+    def _show_closest_signal(self, directory, signals, freq, duration, mean, range):
+        min = lambda x, y: x if abs(x.get_joules() - mean) < abs(y.get_joules() - mean) else y
+        signal = functools.reduce(min, signals)
+        title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
+                 format(mean, range, len(signals), duration, freq)
+        signal.plot(os.path.join(directory, "report.png"), title, True)
+
+    def log(self, resolution, iterations, duration):
+        directory = self._create_tmp_dir()
+        frequency = 1000.0/resolution
+        signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
+        m, r = self._mean_confidence_interval(signals)
+        self._show_closest_signal(directory, signals, frequency, duration, m, r)
+        self._remove_tmp_dir(directory)
+
+if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Plot Power Gadget's logs in time and frequency domain",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -179,31 +214,5 @@ def main():
     parser.add_argument("--debug", help="Show debug messages", action="store_true")
     args = parser.parse_args()
 
-    if(args.iterations <= 1):
-        raise Exception("iterations has to be greater than 1")
-    if(args.duration <= 0):
-        raise Exception("duration has to be greater than 0")
-    if(args.resolution < 50):
-        raise Exception("resolution has to be greater or equal to 50")
-
-    powergadget = PowerGadget(args.gadget_path)
-    # use tmpfs on Linux to avoid periodic disk writes (doesn't happen on OSX and Windows)
-    directory = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
-    frequency = 1000.0/args.resolution
-
-    if os.path.exists(directory):
-        shutil.rmtree(directory)
-    os.makedirs(directory)
-
-    signals, joules = collect_power_usage(powergadget, directory, args.resolution, args.duration, args.iterations, args.debug)
-    m, r = mean_confidence_interval(joules)
-    display_nearest_plot(directory, signals, joules, frequency, args.duration, m, r)
-
-    if args.debug:
-        print("Logs saved to:", directory)
-    else:
-        shutil.rmtree(directory)
-
-
-if __name__ == "__main__":
-    main()
+    logger = PowerLogger(args.gadget_path, args.debug)
+    logger.log(args.resolution, args.iterations, args.duration)
