@@ -15,6 +15,8 @@ import uuid
 import tempfile
 import functools
 
+from datetime import datetime, timedelta
+
 class PowerGadget:
     _osx_exec = "PowerLog"
     _win_exec = "PowerLog.exe"
@@ -58,11 +60,15 @@ class PowerGadget:
                       str(duration) + " -file " + filename)
 
 class Signal:
-    def __init__(self, joules, sequence, frequency, duration):
+    def __init__(self, sequence, timestamps, joules, frequency, duration):
         self._joules = joules
         self._sequence = sequence
         self._frequency = frequency
         self._duration = duration
+        self._start_time = timestamps[0]
+        self._end_time = timestamps[0] + timedelta(0, duration)
+        self._aticks = []
+        self._alabels = []
 
     def get_joules(self):
         return self._joules
@@ -79,6 +85,14 @@ class Signal:
     def get_length(self):
         return len(self._sequence)
 
+    def annotate(self, annotations):
+        for ts, label in annotations:
+            if ts < self._start_time or ts > self._end_time:
+                continue
+
+            self._aticks.append((ts -self._start_time).total_seconds()/duration)
+            self._alabels.append(label)
+
     def plot(self, filename, title, show=False):
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
@@ -86,11 +100,13 @@ class Signal:
         f = scipy.linspace(0, self._frequency/2.0, length/2.0)
 
         pylab.suptitle(title)
-        pylab.subplot(211)
-        pylab.title("Sample run")
+        ax1 = pylab.subplot(211)
         pylab.plot(t, self._sequence)
         pylab.ylabel("Watt")
         pylab.xlabel("time (sec)")
+        ax2 = ax1.twiny()
+        ax2.set_xticks(self._aticks)
+        ax2.set_xticklabels(self._alabels)
 
         pylab.subplot(212)
         #don't plot the mean
@@ -104,9 +120,10 @@ class Signal:
         pylab.clf()
 
     @staticmethod
-    def parse(path, frequency, duration, debug=False):
-        signal = []
+    def parse(path, frequency, duration, start_time, debug=False):
         joules = 0
+        signal = []
+        timestamps = []
 
         with open(path) as f:
             lines = f.readlines()
@@ -134,15 +151,25 @@ class Signal:
 
             # remove the first and last line which might have zero values
             data = data[1:-1]
+            one_day = timedelta(1)
+
+            # assume duration < 24h
+            assert(duration < (24*60*60 - 60))
+
             for line in data:
                 fields = line.split(",")
+
+                ts = datetime.strptime("{}:{}:{} {}".format(start_time.month, start_time.day, start_time.year, fields[0]), "%m:%d:%Y %H:%M:%S:%f")
+                if ts < start_time:
+                    ts = ts + one_day
+
+                timestamps.append(ts)
                 signal.append(float(fields[4]))
 
         assert(joules > 0)
         assert(len(signal) > 0)
 
-        return Signal(joules, signal, frequency, duration)
-
+        return Signal(signal, timestamps, joules, frequency, duration)
 
 class PowerLogger:
     def __init__(self, gadget_path, debug=False):
@@ -164,16 +191,18 @@ class PowerLogger:
         else:
             shutil.rmtree(directory)
 
-    def _collect_power_usage(self, directory, resolution, frequency, duration, iterations):
+    def _collect_power_usage(self, directory, resolution, frequency, duration, iterations, get_annotations):
         signals = iterations * [None]
 
         for i in range(0, iterations):
             if self._debug:
                 print("Starting run", i)
 
+            start_time = datetime.now()
             report = os.path.join(directory, "log_" + str(i))
             self._powergadget.log(resolution, duration, report + ".log")
-            signals[i] = Signal.parse(report + ".log", frequency, duration, self._debug)
+            signals[i] = Signal.parse(report + ".log", frequency, duration, start_time, self._debug)
+            signals[i].annotate(get_annotations())
 
             if self._debug:
                 signals[i].plot(report + ".png", "Run " + str(i))
@@ -195,10 +224,10 @@ class PowerLogger:
                  format(mean, range, len(signals), duration, freq)
         signal.plot(os.path.join(directory, "report.png"), title, True)
 
-    def log(self, resolution, iterations, duration):
+    def log(self, resolution, iterations, duration, get_annotations=lambda:[]):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
-        signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
+        signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations, get_annotations)
         m, r = self._mean_confidence_interval(signals)
         self._show_closest_signal(directory, signals, frequency, duration, m, r)
         self._remove_tmp_dir(directory)
