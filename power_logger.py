@@ -14,6 +14,7 @@ import sys
 import uuid
 import tempfile
 import functools
+import multiprocessing
 
 from datetime import datetime, timedelta
 
@@ -48,7 +49,7 @@ class PowerGadget:
         else:
             raise Exception("Platform is not supported.")
 
-    def log(self, resolution, duration, filename):
+    def _start(self, resolution, duration, filename):
         if self._system == "Darwin":
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename + " > /dev/null")
@@ -58,6 +59,14 @@ class PowerGadget:
         else:
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename)
+
+    def start(self, resolution, duration, filename):
+        self._log_process = multiprocessing.Process(target=functools.partial(self._start, resolution, duration, filename))
+        self._log_process.start()
+
+    def join(self):
+        assert(self._log_process)
+        self._log_process.join()
 
 class Signal:
     def __init__(self, sequence, timestamps, joules, frequency, duration):
@@ -86,6 +95,9 @@ class Signal:
         return len(self._sequence)
 
     def annotate(self, annotations):
+        if not annotations:
+            return
+
         for ts, label in annotations:
             if ts < self._start_time or ts > self._end_time:
                 continue
@@ -175,6 +187,7 @@ class PowerLogger:
     def __init__(self, gadget_path="", debug=False):
         self._powergadget = PowerGadget(gadget_path)
         self._debug = debug
+        self._annotations = []
 
     def _create_tmp_dir(self):
         directory = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
@@ -191,7 +204,7 @@ class PowerLogger:
         else:
             shutil.rmtree(directory)
 
-    def _collect_power_usage(self, directory, resolution, frequency, duration, iterations, get_annotations):
+    def _collect_power_usage(self, directory, resolution, frequency, duration, iterations):
         signals = iterations * [None]
 
         for i in range(0, iterations):
@@ -200,9 +213,17 @@ class PowerLogger:
 
             start_time = datetime.now()
             report = os.path.join(directory, "log_" + str(i))
-            self._powergadget.log(resolution, duration, report + ".log")
+
+            # Decorate power usage logging with template methods
+            self.initialize_iteration()
+            self._powergadget.start(resolution, duration, report + ".log")
+            self.execute_iteration()
+            self._powergadget.join()
+            self.finalize_iteration()
+
             signals[i] = Signal.parse(report + ".log", frequency, duration, start_time, self._debug)
-            signals[i].annotate(get_annotations())
+            signals[i].annotate(self._annotations)
+            self._annotations = []
 
             if self._debug:
                 signals[i].plot(report + ".png", "Run " + str(i))
@@ -224,13 +245,27 @@ class PowerLogger:
                  format(mean, range, len(signals), duration, freq)
         signal.plot(os.path.join(directory, "report.png"), title, True)
 
-    def log(self, resolution, iterations, duration, get_annotations=lambda:[]):
+    def log(self, resolution, iterations, duration):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
-        signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations, get_annotations)
+
+        signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
         m, r = self._mean_confidence_interval(signals)
         self._show_closest_signal(directory, signals, frequency, duration, m, r)
         self._remove_tmp_dir(directory)
+
+    def add_marker(self, message):
+        self._annotations.append((datetime.now(), message))
+
+    def initialize_iteration(self):
+        pass
+
+    def execute_iteration(self):
+        pass
+
+    def finalize_iteration(self):
+        pass
+
 
 if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Plot Power Gadget's logs in time and frequency domain",
