@@ -14,7 +14,7 @@ Power logger wraps Intel's Power Gadget providing a simple API and plotting faci
 python3 power_logger.py -e 50 -d 30 -i 5
 ```
 ## Example usage through the API
-```
+```python
 from power_logger import PowerLogger
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
