@@ -1,9 +1,5 @@
-import os
-import time
-
 from power_logger import PowerLogger
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 
 class CnnLoad(PowerLogger):
     def __init__(self):
@@ -17,7 +13,7 @@ class CnnLoad(PowerLogger):
     # Everything in here runs with the power logger enabled
     def execute_iteration(self):
         self._driver.get("http://www.cnn.com")
-        # Mark an event in time that will appear in the final plots
+        # Mark an event in time to appear in the final plots
         self.add_marker("page load")
         self._driver.get("http://www.cnn.com")
         self.add_marker("page load")
