@@ -90,7 +90,7 @@ class Signal:
             if ts < self._start_time or ts > self._end_time:
                 continue
 
-            self._aticks.append((ts -self._start_time).total_seconds()/duration)
+            self._aticks.append((ts -self._start_time).total_seconds()/self._duration)
             self._alabels.append(label)
 
     def plot(self, filename, title, show=False):
@@ -172,7 +172,7 @@ class Signal:
         return Signal(signal, timestamps, joules, frequency, duration)
 
 class PowerLogger:
-    def __init__(self, gadget_path, debug=False):
+    def __init__(self, gadget_path="", debug=False):
         self._powergadget = PowerGadget(gadget_path)
         self._debug = debug
 
