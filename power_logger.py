@@ -16,7 +16,13 @@ import tempfile
 import functools
 import multiprocessing
 
+from bisect import bisect_left
 from datetime import datetime, timedelta
+
+def binary_search(a, x, lo=0, hi=None):
+    hi = hi if hi is not None else len(a)
+    pos = bisect_left(a,x,lo,hi)
+    return (pos if pos != hi and a[pos] == x else -1)
 
 class PowerGadget:
     _osx_exec = "PowerLog"
@@ -69,9 +75,10 @@ class PowerGadget:
         self._log_process.join()
 
 class Signal:
-    def __init__(self, sequence, timestamps, joules, frequency, duration):
-        self._joules = joules
+    def __init__(self, sequence, timestamps, cumulative_joules, frequency, duration):
         self._sequence = sequence
+        self._timestamps = timestamps
+        self._cumulative_joules = cumulative_joules
         self._frequency = frequency
         self._duration = duration
         self._start_time = timestamps[0]
@@ -79,17 +86,29 @@ class Signal:
         self._aticks = []
         self._alabels = []
 
-    def get_joules(self):
-        return self._joules
+    def get_joules(self, start_ts=None, end_ts=None):
+        start = 0
+        end = len(self._cumulative_joules) - 1
 
-    def get_sequence(self):
-        return self._sequence
+        if start_ts:
+            start = bisect_left(self._timestamps, start_ts)
+            assert(start <= self._end_time)
+            assert(start >= self._start_time)
 
-    def get_frequency(self):
-        return self._frequency
+        if end_ts:
+            end = bisect_left(self._timestamps, end_ts)
+            assert(end <= self._end_time)
+            assert(end >= self._start_time)
 
-    def get_duration(self):
-        return self._duration
+        start = self._cumulative_joules[start]
+        end = self._cumulative_joules[end]
+        return end - start
+
+    def get_start_time(self):
+        return self._start_time
+
+    def get_end_time(self):
+        return self._end_time
 
     def get_length(self):
         return len(self._sequence)
@@ -105,20 +124,21 @@ class Signal:
             self._aticks.append((ts -self._start_time).total_seconds()/self._duration)
             self._alabels.append(label)
 
-    def plot(self, filename, title, show=False):
+    def plot(self, filename, title="", show=False):
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
         fft = abs(scipy.fft(self._sequence))
         f = scipy.linspace(0, self._frequency/2.0, length/2.0)
 
         pylab.suptitle(title)
+        pylab.subplots_adjust(hspace=0.5, top=0.8)
         ax1 = pylab.subplot(211)
         pylab.plot(t, self._sequence)
         pylab.ylabel("Watt")
         pylab.xlabel("time (sec)")
         ax2 = ax1.twiny()
         ax2.set_xticks(self._aticks)
-        ax2.set_xticklabels(self._alabels)
+        ax2.set_xticklabels(self._alabels, rotation="vertical")
 
         pylab.subplot(212)
         #don't plot the mean
@@ -133,8 +153,8 @@ class Signal:
 
     @staticmethod
     def parse(path, frequency, duration, start_time, debug=False):
-        joules = 0
         signal = []
+        cumulative_joules = []
         timestamps = []
 
         with open(path) as f:
@@ -149,23 +169,14 @@ class Signal:
                     metadata = lines[iteration + 1:]
                     break
 
-            # parse metadata
-            regexp = re.compile('.*Processor Energy_0\s?\(Joules\)\s?=\s?(.*)')
+            # print metadata if required
             for line in metadata:
                 line = line.strip()
-
-                m = regexp.match(line)
-                if m:
-                    joules = float(m.group(1))
-
                 if line and debug:
                     print(line)
 
-            # remove the first and last line which might have zero values
-            data = data[1:-1]
-            one_day = timedelta(1)
-
             # assume duration < 24h
+            one_day = timedelta(1)
             assert(duration < (24*60*60 - 60))
 
             for line in data:
@@ -177,11 +188,11 @@ class Signal:
 
                 timestamps.append(ts)
                 signal.append(float(fields[4]))
+                cumulative_joules.append(float(fields[5]))
 
-        assert(joules > 0)
         assert(len(signal) > 0)
 
-        return Signal(signal, timestamps, joules, frequency, duration)
+        return Signal(signal, timestamps, cumulative_joules, frequency, duration)
 
 class PowerLogger:
     def __init__(self, gadget_path="", debug=False):
@@ -205,30 +216,47 @@ class PowerLogger:
             shutil.rmtree(directory)
 
     def _collect_power_usage(self, directory, resolution, frequency, duration, iterations):
-        signals = iterations * [None]
+        signals = []
 
         for i in range(0, iterations):
             if self._debug:
                 print("Starting run", i)
 
-            start_time = datetime.now()
             report = os.path.join(directory, "log_" + str(i))
-
-            # Decorate power usage logging with template methods
-            self.initialize_iteration()
-            self._powergadget.start(resolution, duration, report + ".log")
-            self.execute_iteration()
-            self._powergadget.join()
-            self.finalize_iteration()
-
-            signals[i] = Signal.parse(report + ".log", frequency, duration, start_time, self._debug)
-            signals[i].annotate(self._annotations)
-            self._annotations = []
-
-            if self._debug:
-                signals[i].plot(report + ".png", "Run " + str(i))
+            signals.append(self._run_iteration(resolution, frequency, duration, report))
 
         return signals
+
+    def _predict_duration(self):
+        self.initialize_iteration()
+        start = datetime.now()
+        self.execute_iteration()
+        end = datetime.now()
+        self.finalize_iteration()
+        return int((end - start).total_seconds()) + 5 #magic number
+
+    def _run_iteration(self, resolution, frequency, duration, report):
+        # Decorate power usage logging with template methods
+        self._annotations = []
+        self.initialize_iteration()
+
+        start_time = datetime.now()
+        self._powergadget.start(resolution, duration, report + ".log")
+        self.execute_iteration()
+        end_time = datetime.now()
+
+        self._powergadget.join()
+        self.finalize_iteration()
+
+        signal = Signal.parse(report + ".log", frequency, duration, start_time, self._debug)
+        signal.annotate(self._annotations)
+
+        assert(end_time < signal.get_end_time())
+
+        if self._debug:
+            signal.plot(report + ".png")
+
+        return signal
 
     def _mean_confidence_interval(self, signals, confidence=0.95):
         data = [signal.get_joules() for signal in signals]
@@ -245,9 +273,13 @@ class PowerLogger:
                  format(mean, range, len(signals), duration, freq)
         signal.plot(os.path.join(directory, "report.png"), title, True)
 
-    def log(self, resolution, iterations, duration):
+    def log(self, resolution, iterations, duration=None):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
+
+        #run prediction in any case as a warm up run
+        predicted_duration = self._predict_duration()
+        duration = duration if duration else predicted_duration
 
         signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
         m, r = self._mean_confidence_interval(signals)
