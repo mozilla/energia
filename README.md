@@ -2,6 +2,8 @@
 
 Power logger wraps Intel's Power Gadget providing a simple API and plotting facilities.
 
+![screenshot] (https://raw.github.com/vitillo/power_logger/master/screenshot.png)
+
 ## Dependencies
 
 * Intel's Power Gadget
