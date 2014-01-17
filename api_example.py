@@ -6,6 +6,10 @@ class CnnLoad(PowerLogger):
         super().__init__()
         self._driver = webdriver.Firefox()
 
+    # This method is run before all iterations
+    def initialize(self):
+        pass
+
     # This method is run before the power profiling is enabled
     def initialize_iteration(self):
         self._driver.get("about:blank")
@@ -23,6 +27,10 @@ class CnnLoad(PowerLogger):
     # This method is run after the power profiling has been disabled
     def finalize_iteration(self):
         self._driver.get("about:blank")
+
+    # This method is run after all iterations
+    def finalize(self):
+        pass
 
 logger = CnnLoad()
 logger.log(50, 5)

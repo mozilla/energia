@@ -218,6 +218,8 @@ class PowerLogger:
     def _collect_power_usage(self, directory, resolution, frequency, duration, iterations):
         signals = []
 
+        self.initialize()
+
         for i in range(0, iterations):
             if self._debug:
                 print("Starting run", i)
@@ -225,6 +227,7 @@ class PowerLogger:
             report = os.path.join(directory, "log_" + str(i))
             signals.append(self._run_iteration(resolution, frequency, duration, report))
 
+        self.finalize()
         return signals
 
     def _predict_duration(self):
@@ -273,7 +276,7 @@ class PowerLogger:
                  format(mean, range, len(signals), duration, freq)
         signal.plot(os.path.join(directory, "report.png"), title, True)
 
-    def log(self, resolution, iterations, duration=None):
+    def log(self, resolution, iterations, duration=None, show=True):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
 
@@ -283,8 +286,9 @@ class PowerLogger:
 
         signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
         m, r = self._mean_confidence_interval(signals)
-        self._show_closest_signal(directory, signals, frequency, duration, m, r)
+        self._show_closest_signal(directory, signals, frequency, duration, m, r) if show else None
         self._remove_tmp_dir(directory)
+        self.process_measurements(m, r, signals, duration, frequency)
 
     def add_marker(self, message):
         self._annotations.append((datetime.now(), message))
@@ -298,6 +302,14 @@ class PowerLogger:
     def finalize_iteration(self):
         pass
 
+    def initalize(self):
+        pass
+
+    def finalize(self):
+        pass
+
+    def process_measurements(self):
+        pass
 
 if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Plot Power Gadget's logs in time and frequency domain",
