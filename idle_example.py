@@ -11,7 +11,7 @@ class IdleLogger(PowerLogger):
     # This method is run before all iterations
     def initialize(self):
         self.browser.initialize()
-        sleep(5)
+        sleep(100)
         pass
 
     # Everything in here runs with the power logger enabled
@@ -33,10 +33,21 @@ class OSXBrowser:
         self.page = page
 
         if browser == "firefox":
+            self.browser = "Firefox.app"
+        elif browser =="firefox-nightly":
             self.browser = "FirefoxNightly.app"
+        elif browser == "chrome":
+            self.browser = "Google Chrome.app"
+        elif browser == "safari":
+            self.browser = "Safari.app"
+        else:
+            assert(0)
 
     def initialize(self):
-        os.system("open /Applications/" + self.browser + " --args " + self.page)
+        if self.browser == "Safari.app":
+            os.system("open -a " + self.browser.replace(" ", "\\ ") + " " + "http://" + self.page)
+        else:
+            os.system("open -a " + self.browser.replace(" ", "\\ ") + " --args " + self.page)
 
     def finalize(self):
         os.system('osascript -e \"tell application \\\"' + self.browser + '\\\" to quit\"')
@@ -46,10 +57,12 @@ class OSXBrowser:
 
 #process = Popen(['/Applications/FirefoxNightly.app/Contents/MacOS/firefox-bin', '-new-window', 'www.cnn.com'], shell=True)
 
-websites = ["about:blank", "www.youtube.com", "www.yahoo.com", "www.amazon.com", "www.ebay.com", "www.google.com",
+websites = ["about:blank", "www.youtube.com", "www.yahoo.com",
+            "www.amazon.com", "www.ebay.com", "www.google.com",
             "www.facebook.com", "www.wikipedia.com", "www.craigslist.com"]
 
-for page in websites:
-    browser = OSXBrowser("firefox", page)
-    logger = IdleLogger(browser)
-    logger.log(50, 5, 20, show=False)
+for page in websites[:]:
+    for browser in ["firefox", "firefox-nightly", "chrome", "safari"]:
+        browser = OSXBrowser(browser, page)
+        logger = IdleLogger(browser)
+        logger.log(50, 10, 30, show=False)
