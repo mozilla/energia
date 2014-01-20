@@ -302,7 +302,7 @@ class PowerLogger:
     def finalize_iteration(self):
         pass
 
-    def initalize(self):
+    def initialize(self):
         pass
 
     def finalize(self):
