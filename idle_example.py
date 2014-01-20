@@ -133,7 +133,7 @@ websites = ["about:blank", "www.youtube.com", "www.yahoo.com",
 if __name__ == "__main__":
     print("OS, Browser, Page, Mean, CI, runs, s, hz\n")
 
-    for page in websites[:3]:
+    for page in websites[:]:
         for browser in ["firefox", "chrome", "safari", "ie"]:
             try:
                 browser = BrowserFactory(browser, page)
