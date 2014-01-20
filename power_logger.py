@@ -64,7 +64,7 @@ class PowerGadget:
                       str(duration) + " > " + filename)
         else:
             os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
-                      str(duration) + " -file " + filename)
+                      str(duration) + " -file " + filename + " > NUL 2>&1")
 
     def start(self, resolution, duration, filename):
         self._log_process = multiprocessing.Process(target=functools.partial(self._start, resolution, duration, filename))
