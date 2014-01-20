@@ -20,13 +20,12 @@ class IdleLogger(PowerLogger):
         pass
 
     def process_measurements(self, m, r, signals, duration, frequency):
-        print("{} - mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
+        print("{}, {:.2f}, {:.2f}, {}, {}, {:.2f}".\
               format(self.browser, m, r, len(signals), duration, frequency))
 
     # This method is run after all iterations
     def finalize(self):
         self.browser.finalize()
-        sleep(5)
         pass
 
 class OSXBrowser:
@@ -35,12 +34,16 @@ class OSXBrowser:
 
         if browser == "firefox":
             self.browser = "Firefox.app"
+            self.description = "Firefox"
         elif browser =="firefox-nightly":
             self.browser = "FirefoxNightly.app"
+            self.description = "Firefox Nightly"
         elif browser == "chrome":
             self.browser = "Google Chrome.app"
+            self.description = "Chrome"
         elif browser == "safari":
             self.browser = "Safari.app"
+            self.description = "Safari"
         else:
             assert(0)
 
@@ -55,7 +58,7 @@ class OSXBrowser:
         os.system('osascript -e \"tell application \\\"' + self.browser + '\\\" to quit\"')
 
     def __str__(self):
-        return 'OSX, ' + self.browser + ', ' + self.page
+        return 'OSX, ' + self.description + ', ' + self.page
 
 class UbuntuBrowser:
     def __init__(self, browser, page):
@@ -63,10 +66,13 @@ class UbuntuBrowser:
 
         if browser == "firefox":
             self.browser = "firefox"
+            self.description = "Firefox"
         elif browser == "firefox-nightly":
             self.browser = "firefox-trunk"
+            self.description = "Firefox"
         elif browser == "chrome":
             self.browser = "chromium-browser"
+            self.description = "Chromium"
         else:
             raise
 
@@ -80,7 +86,7 @@ class UbuntuBrowser:
             os.system("wmctrl -c " + self.browser)
 
     def __str__(self):
-        return 'Ubuntu, ' + self.browser + ', ' + self.page
+        return 'Ubuntu, ' + self.description + ', ' + self.page
 
 def BrowserFactory(browser, page):
     if platform.system() == "Linux":
@@ -96,6 +102,7 @@ websites = ["about:blank", "www.youtube.com", "www.yahoo.com",
             "www.amazon.com", "www.ebay.com", "www.google.com",
             "www.facebook.com", "www.wikipedia.com", "www.craigslist.com"]
 
+print("OS, Browser, Page, Mean, CI, runs, s, hz")
 for page in websites[:]:
     for browser in ["firefox", "chrome", "safari"]:
         try:
