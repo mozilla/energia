@@ -1,7 +1,7 @@
 import scipy
 import scipy.fftpack
 import scipy.stats
-import pylab
+import sys
 import argparse
 import datetime
 import time
@@ -10,14 +10,19 @@ import os
 import platform
 import re
 import shutil
-import sys
 import uuid
 import tempfile
 import functools
 import multiprocessing
+import rpy2.robjects as ro
+import rpy2.robjects.lib.ggplot2 as ggplot2
 
 from bisect import bisect_left
 from datetime import datetime, timedelta
+from rpy2.robjects.packages import importr
+
+gridExtra = importr("gridExtra")
+grDevices = importr('grDevices')
 
 def binary_search(a, x, lo=0, hi=None):
     hi = hi if hi is not None else len(a)
@@ -33,7 +38,7 @@ class PowerGadget:
         self._system = platform.system()
 
         if path:
-            if os.path.exists(path):
+            if os.path.exists(path) and os.access(path, os.X_OK):
                 self._path = path
             else:
                 raise Exception("Intel Power Gadget executable not found")
@@ -76,7 +81,7 @@ class PowerGadget:
 
 class Signal:
     def __init__(self, sequence, timestamps, cumulative_joules, frequency, duration):
-        self._sequence = sequence
+        self._sequence = numpy.array(sequence)
         self._timestamps = timestamps
         self._cumulative_joules = cumulative_joules
         self._frequency = frequency
@@ -124,32 +129,39 @@ class Signal:
             self._aticks.append((ts -self._start_time).total_seconds()/self._duration)
             self._alabels.append(label)
 
-    def plot(self, filename, title="", show=False):
+    def get_time_freq_plots(self, title=""):
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
+
+        frame = ro.DataFrame({'Watt': ro.FloatVector(self._sequence), 'sec': ro.FloatVector(t)})
+        watts = ggplot2.ggplot(frame) + \
+                ggplot2.aes_string(x="sec", y="Watt") + \
+                ggplot2.geom_line() + \
+                ggplot2.ggtitle(title) + \
+                ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
+                ggplot2.theme_bw()
+
         fft = abs(scipy.fft(self._sequence))
         f = scipy.linspace(0, self._frequency/2.0, length/2.0)
 
-        pylab.suptitle(title)
-        pylab.subplots_adjust(hspace=0.5, top=0.8)
-        ax1 = pylab.subplot(211)
-        pylab.plot(t, self._sequence)
-        pylab.ylabel("Watt")
-        pylab.xlabel("time (sec)")
-        ax2 = ax1.twiny()
-        ax2.set_xticks(self._aticks)
-        ax2.set_xticklabels(self._alabels, rotation="vertical")
+        # don't plot the mean
+        fft = 2.0/length*abs(fft[1:length//2])
+        f = f[1:]
 
-        pylab.subplot(212)
-        #don't plot the mean
-        pylab.plot(f[1:], 2.0/length*abs(fft[1:length//2]))
-        pylab.ylabel('amplitude')
-        pylab.xlabel('frequency (hz)')
-        pylab.savefig(filename)
+        frame = ro.DataFrame({'Amplitude': ro.FloatVector(fft), 'hz': ro.FloatVector(f)})
+        freq = ggplot2.ggplot(frame) + \
+               ggplot2.aes_string(x="hz", y="Amplitude") + \
+               ggplot2.geom_line() + \
+               ggplot2.theme_bw()
 
-        if show:
-            pylab.show()
-        pylab.clf()
+        return (watts, freq)
+
+    def plot(self, filename, title="", width=1024, height=512):
+        time, freq = self.get_time_freq_plots(title)
+
+        grDevices.png(file=filename, width=width, height=height)
+        gridExtra.grid_arrange(time, freq)
+        grDevices.dev_off()
 
     @staticmethod
     def parse(path, frequency, duration, start_time, debug=False):
@@ -157,38 +169,42 @@ class Signal:
         cumulative_joules = []
         timestamps = []
 
-        with open(path) as f:
-            lines = f.readlines()
-            data = []
-            metadata = []
+        try:
+            with open(path) as f:
+                lines = f.readlines()
+                data = []
+                metadata = []
 
-            # split in data and metadata
-            for iteration, line in enumerate(lines):
-                if line == "\n":
-                    data = lines[1:iteration]
-                    metadata = lines[iteration + 1:]
-                    break
+                # split in data and metadata
+                for iteration, line in enumerate(lines):
+                    if line == "\n":
+                        data = lines[1:iteration]
+                        metadata = lines[iteration + 1:]
+                        break
 
-            # print metadata if required
-            for line in metadata:
-                line = line.strip()
-                if line and debug:
-                    print(line)
+                # print metadata if required
+                for line in metadata:
+                    line = line.strip()
+                    if line and debug:
+                        print(line)
 
-            # assume duration < 24h
-            one_day = timedelta(1)
-            assert(duration < (24*60*60 - 60))
+                # assume duration < 24h
+                one_day = timedelta(1)
+                assert(duration < (24*60*60 - 60))
 
-            for line in data:
-                fields = line.split(",")
+                for line in data:
+                    fields = line.split(",")
 
-                ts = datetime.strptime("{}:{}:{} {}".format(start_time.month, start_time.day, start_time.year, fields[0]), "%m:%d:%Y %H:%M:%S:%f")
-                if ts < start_time:
-                    ts = ts + one_day
+                    ts = datetime.strptime("{}:{}:{} {}".format(start_time.month, start_time.day, start_time.year, fields[0]), "%m:%d:%Y %H:%M:%S:%f")
+                    if ts < start_time:
+                        ts = ts + one_day
 
-                timestamps.append(ts)
-                signal.append(float(fields[4]))
-                cumulative_joules.append(float(fields[5]))
+                    timestamps.append(ts)
+                    signal.append(float(fields[4]))
+                    cumulative_joules.append(float(fields[5]))
+        except FileNotFoundError:
+            raise Exception("PowerLog failed to generate a valid logfile")
+            return sys.exit(-1)
 
         assert(len(signal) > 0)
 
@@ -269,14 +285,17 @@ class PowerLogger:
         h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
         return mean, h
 
-    def _show_closest_signal(self, directory, signals, freq, duration, mean, range):
-        min = lambda x, y: x if abs(x.get_joules() - mean) < abs(y.get_joules() - mean) else y
-        signal = functools.reduce(min, signals)
+    def _plot_closest_signal(self, signals, freq, duration, mean, range, png_output):
+        signal = self.get_closest_signal(signals, mean)
         title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
                  format(mean, range, len(signals), duration, freq)
-        signal.plot(os.path.join(directory, "report.png"), title, True)
+        signal.plot(png_output, title)
 
-    def log(self, resolution, iterations, duration=None, show=True):
+    def get_closest_signal(self, signals, mean):
+        min = lambda x, y: x if abs(x.get_joules() - mean) < abs(y.get_joules() - mean) else y
+        return functools.reduce(min, signals)
+
+    def log(self, resolution, iterations, duration=None, png_output="report", plot=True):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
 
@@ -286,9 +305,9 @@ class PowerLogger:
 
         signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
         m, r = self._mean_confidence_interval(signals)
-        self._show_closest_signal(directory, signals, frequency, duration, m, r) if show else None
+        self._plot_closest_signal(signals, frequency, duration, m, r, png_output) if plot else None
         self._remove_tmp_dir(directory)
-        self.process_measurements(m, r, signals, duration, frequency)
+        self.process_measurements(m, r, signals, self.get_closest_signal(signals, m), duration, frequency)
 
     def add_marker(self, message):
         self._annotations.append((datetime.now(), message))
@@ -308,7 +327,7 @@ class PowerLogger:
     def finalize(self):
         pass
 
-    def process_measurements(self):
+    def process_measurements(self, m, r, signals, closest_signal, druation, frequency):
         pass
 
 if __name__ == "__main__":
@@ -319,8 +338,9 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=60, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=2, type=int)
     parser.add_argument("-p", "--gadget_path", help="Intel's Power Gadget path", default="")
+    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report")
     parser.add_argument("--debug", help="Show debug messages", action="store_true")
     args = parser.parse_args()
 
     logger = PowerLogger(args.gadget_path, args.debug)
-    logger.log(args.resolution, args.iterations, args.duration)
+    logger.log(args.resolution, args.iterations, args.duration, args.output)

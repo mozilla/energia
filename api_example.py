@@ -30,6 +30,7 @@ class CnnLoad(PowerLogger):
 
     # This method is run after all iterations
     def finalize(self):
+        self._driver.quit()
         pass
 
 logger = CnnLoad()

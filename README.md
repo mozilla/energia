@@ -7,7 +7,8 @@ Power logger wraps Intel's Power Gadget providing a simple API and plotting faci
 ## Dependencies
 
 * Intel's Power Gadget
-* Python 3, numpy, scipy and matplotlib
+* Python 3 with numpy, scipy and matplotlib
+* R with ggplot2 and gridExtra
 * On Linux the **msr** and **cpuid** modules have to be loaded
 
 ## Example usage as command line tool
