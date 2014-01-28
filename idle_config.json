@@ -1,0 +1,22 @@
+{
+  "OS": {
+    "Darwin": [
+      {"name": "Chrome", "path": "/Applications/Google Chrome.app"},
+      {"name": "Safari", "path": "/Applications/Safari.app"},
+      {"name": "Firefox", "path": "/Applications/Firefox.app"}
+    ],
+    "Windows": [
+      {"name": "Chrome", "path": "chrome"},
+      {"name": "Internet Explorer", "path": "iexplore"},
+      {"name": "Firefox", "path": "firefox"}
+    ],
+    "Linux": [
+      {"name": "Chrome", "path": "chromium-nightly"},
+      {"name": "Firefox", "path": "firefox"}
+    ]
+  },
+
+  "Pages": ["about:blank", "www.youtube.com", "www.yahoo.com", "www.amazon.com",
+            "www.ebay.com", "www.google.com", "www.facebook.com", "www.wikipedia.com",
+            "wwww.craigslist.com"]
+}

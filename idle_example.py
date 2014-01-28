@@ -2,16 +2,16 @@ import os
 import platform
 import rpy2.robjects as ro
 import rpy2.robjects.lib.ggplot2 as ggplot2
+import argparse
+import json
 
 from power_logger import PowerLogger
 from subprocess import Popen
 from time import sleep
 from rpy2.robjects.packages import importr
 
-gridExtra = importr("gridExtra")
-grDevices = importr('grDevices')
-
-measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
+_measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
+_config = None
 
 class IdleLogger(PowerLogger):
     def __init__(self, browser):
@@ -29,14 +29,14 @@ class IdleLogger(PowerLogger):
         pass
 
     def process_measurements(self, m, r, signals, closest_signal, duration, frequency):
-        measurements["Browser"].append(self.browser.get_name())
-        measurements["Page"].append(self.browser.get_page())
-        measurements["Joules"].append(m)
-        measurements["CI"].append(r)
-        measurements["Runs"].append(len(signals))
-        measurements["sec"].append(duration)
-        measurements["hz"].append(frequency)
-        measurements["signal"].append(closest_signal)
+        _measurements["Browser"].append(self.browser.get_name())
+        _measurements["Page"].append(self.browser.get_page())
+        _measurements["Joules"].append(m)
+        _measurements["CI"].append(r)
+        _measurements["Runs"].append(len(signals))
+        _measurements["sec"].append(duration)
+        _measurements["hz"].append(frequency)
+        _measurements["signal"].append(closest_signal)
 
     # This method is run after all iterations
     def finalize(self):
@@ -45,64 +45,11 @@ class IdleLogger(PowerLogger):
         sleep(1)
         pass
 
-class WinBrowser:
-    def __init__(self, browser, page):
+class Browser:
+    def __init__(self, name, path, page):
         self.page = page
-
-        if browser == "firefox":
-            self.browser = "firefox"
-            self.description = "Firefox"
-        elif browser == "chrome":
-            self.browser = "chrome"
-            self.description = "Chrome"
-        elif browser == "ie":
-            self.browser = "iexplore"
-            self.description = "Internet Explorer"
-        else:
-            assert(0)
-
-    def initialize(self):
-        # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
-        os.system("start " + self.browser + " " + self.page)
-        pass
-
-    def finalize(self):
-        os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
-        pass
-
-    def __str__(self):
-        return 'Win, ' + self.description + ', ' + self.page
-
-class OSXBrowser:
-    def __init__(self, browser, page):
-        self.page = page
-
-        if browser == "firefox":
-            self.browser = "Firefox.app"
-            self.description = "Firefox"
-        elif browser =="firefox-nightly":
-            self.browser = "FirefoxNightly.app"
-            self.description = "Firefox Nightly"
-        elif browser == "chrome":
-            self.browser = "Google Chrome.app"
-            self.description = "Chrome"
-        elif browser == "safari":
-            self.browser = "Safari.app"
-            self.description = "Safari"
-        else:
-            assert(0)
-
-    def initialize(self):
-        if self.browser == "Safari.app":
-            os.system("open -a " + self.browser.replace(" ", "\\ ") + " " + "http://" + self.page)
-        else:
-            os.system("open -a " + self.browser.replace(" ", "\\ ") + " --args " + self.page)
-
-    def finalize(self):
-        os.system('osascript -e \"tell application \\\"' + self.browser + '\\\" to quit\"')
-
-    def get_OS(self):
-        return "OSX"
+        self.browser = path
+        self.description = name
 
     def get_name(self):
         return self.description
@@ -110,27 +57,49 @@ class OSXBrowser:
     def get_page(self):
         return self.page
 
-    def __str__(self):
-        return 'OSX, ' + self.description + ', ' + self.page
+    @staticmethod
+    def create_browser(name, path, page):
+        os = platform.system()
 
-class UbuntuBrowser:
-    def __init__(self, browser, page):
-        self.page = page
-
-        if browser == "firefox":
-            self.browser = "firefox"
-            self.description = "Firefox"
-        elif browser == "firefox-nightly":
-            self.browser = "firefox-trunk"
-            self.description = "Firefox"
-        elif browser == "chrome":
-            self.browser = "chromium-browser"
-            self.description = "Chromium"
+        if os == "Linux":
+            return UbuntuBrowser(name, path, page)
+        elif os == "Darwin":
+            return OSXBrowser(name, path, page)
+        elif os == "Windows":
+            return WinBrowser(name, path, page)
         else:
-            raise
+            assert(0)
+
+class WinBrowser(Browser):
+    def __init__(self, name, path, page):
+        super().__init__(name, path, page)
 
     def initialize(self):
-        os.system(self.browser + " " + self.page + " > /dev/null 2>&1 &")
+        # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
+        os.system("start " + self.browser + " " + self.page)
+
+    def finalize(self):
+        os.system("taskkill /im " + self.browser + ".exe")
+
+class OSXBrowser(Browser):
+    def __init__(self, name, path, page):
+        super().__init__(name, path, page)
+
+    def initialize(self):
+        if self.description == "Safari":
+            os.system("open -a " + self.browser.replace(" ", "\\ ") + " " + "http://" + self.page)
+        else:
+            os.system("open -a " + self.browser.replace(" ", "\\ ") + " --args " + self.page)
+
+    def finalize(self):
+        os.system('osascript -e \"tell application \\\"' + self.browser + '\\\" to quit\"')
+
+class UbuntuBrowser(Browser):
+    def __init__(self, name, path, page):
+        super().__init__(name, path, page)
+
+    def initialize(self):
+        os.system(self.browser + " " + self.page + "&")
 
     def finalize(self):
         if self.browser == "chromium-browser":
@@ -138,39 +107,28 @@ class UbuntuBrowser:
         else:
             os.system("wmctrl -c " + self.browser)
 
-    def __str__(self):
-        return 'Ubuntu, ' + self.description + ', ' + self.page
+def get_pages():
+    return _config["Pages"][:2]
 
-def BrowserFactory(browser, page):
-    if platform.system() == "Linux":
-        return UbuntuBrowser(browser, page)
-    elif platform.system() == "Darwin":
-        return OSXBrowser(browser, page)
-    elif platform.system() == "Windows":
-        return WinBrowser(browser, page)
-    else:
-        assert(0)
+def get_browsers():
+    os = platform.system()
+    return _config["OS"][os]
 
-websites = ["about:blank", "www.youtube.com", "www.yahoo.com",
-            "www.amazon.com", "www.ebay.com", "www.google.com",
-            "www.facebook.com", "www.wikipedia.com", "www.craigslist.com"]
+def run_benchmark():
+    for page in get_pages():
+        for b in get_browsers():
+            browser = Browser.create_browser(name=b["name"], path=b["path"], page=page)
+            logger = IdleLogger(browser)
+            logger.log(resolution=50, iterations=2, duration=1, plot=False)
 
-if __name__ == "__main__":
-    for page in websites[:1]:
-        #for browser in ["firefox", "chrome", "safari", "ie"]:
-        for browser in ["chrome", "safari", "ie"]:
-            try:
-                browser = BrowserFactory(browser, page)
-                logger = IdleLogger(browser)
-                #logger.log(resolution=50, iterations=10, duration=30, plot=False)
-                logger.log(resolution=50, iterations=2, duration=1, plot=False)
-            except:
-                pass
+def plot_data(filename, width=1024, height=300):
+    gridExtra = importr("gridExtra")
+    grDevices = importr('grDevices')
 
-    frame = ro.DataFrame({"Browser": ro.StrVector(measurements["Browser"]),
-        "Page": ro.StrVector(measurements["Page"]),
-        "Joules": ro.FloatVector(measurements["Joules"]),
-        "CI": ro.FloatVector(measurements["CI"])})
+    frame = ro.DataFrame({"Browser": ro.StrVector(_measurements["Browser"]),
+        "Page": ro.StrVector(_measurements["Page"]),
+        "Joules": ro.FloatVector(_measurements["Joules"]),
+        "CI": ro.FloatVector(_measurements["CI"])})
 
     p = ggplot2.ggplot(frame) + \
            ggplot2.aes_string(x="Page", y="Joules", fill="Browser") + \
@@ -183,9 +141,33 @@ if __name__ == "__main__":
                2, 1, 1000.0/50, "OSX"))
 
     plots = [p]
-    for i in range(0, len(measurements["signal"])):
-        title = measurements["Browser"][i] + " " + measurements["Page"][i]
-        plots.append(measurements["signal"][i].get_time_freq_plots()[0] + ggplot2.ggtitle(title))
+    n_browsers = len(get_browsers())
+    n_pages = len(get_pages())
 
-    gridExtra.grid_arrange(*plots)
-    sleep(5)
+    for i in range(0, n_pages):
+        tmp_plots = []
+
+        for j in range(0, n_browsers):
+            index = i*n_browsers + j
+            title = _measurements["Browser"][index] + " " + _measurements["Page"][index]
+            tmp_plots.append(_measurements["signal"][index].get_time_freq_plots()[0] + ggplot2.ggtitle(title))
+
+        plots.append(gridExtra.arrangeGrob(*tmp_plots, ncol=n_browsers))
+
+    grDevices.png(file=filename, width=width, height=height * len(plots))
+    gridExtra.grid_arrange(gridExtra.arrangeGrob(*plots, nrow=n_pages + 1))
+    grDevices.dev_off()
+
+if __name__ == "__main__":
+    parser= argparse.ArgumentParser(description="Idle power benchmark",
+                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report")
+    parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
+    args = parser.parse_args()
+
+    with open(args.config) as f:
+        _config = json.load(f)
+
+    run_benchmark()
+    plot_data(args.output)
