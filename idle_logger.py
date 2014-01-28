@@ -21,7 +21,7 @@ class IdleLogger(PowerLogger):
     # This method is run before all iterations
     def initialize(self):
         self.browser.initialize()
-        #sleep(100)
+        sleep(100)
         pass
 
     # Everything in here runs with the power logger enabled
@@ -41,8 +41,7 @@ class IdleLogger(PowerLogger):
     # This method is run after all iterations
     def finalize(self):
         self.browser.finalize()
-        #sleep(5)
-        sleep(1)
+        sleep(5)
         pass
 
 class Browser:

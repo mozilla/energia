@@ -139,7 +139,8 @@ class Signal:
                 ggplot2.geom_line() + \
                 ggplot2.ggtitle(title) + \
                 ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
-                ggplot2.theme_bw()
+                ggplot2.theme_bw() + \
+                ggplot2.scale_x_continuous(expand=ro.IntVector([0, 0]))
 
         fft = abs(scipy.fft(self._sequence))
         f = scipy.linspace(0, self._frequency/2.0, length/2.0)
@@ -152,7 +153,8 @@ class Signal:
         freq = ggplot2.ggplot(frame) + \
                ggplot2.aes_string(x="hz", y="Amplitude") + \
                ggplot2.geom_line() + \
-               ggplot2.theme_bw()
+               ggplot2.theme_bw() + \
+               ggplot2.scale_x_continuous(expand=ro.IntVector([0, 0]))
 
         return (watts, freq)
 
