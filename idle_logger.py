@@ -14,8 +14,8 @@ _measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec"
 _config = None
 
 class IdleLogger(PowerLogger):
-    def __init__(self, browser):
-        super().__init__()
+    def __init__(self, browser, gadget_path):
+        super().__init__(gadget_path=gadget_path)
         self.browser = browser
 
     # This method is run before all iterations
@@ -108,18 +108,18 @@ class UbuntuBrowser(Browser):
             os.system("wmctrl -c " + self.browser)
 
 def get_pages():
-    return _config["Pages"][:2]
+    return _config["Pages"]
 
 def get_browsers():
     os = platform.system()
     return _config["OS"][os]
 
-def run_benchmark():
+def run_benchmark(args):
     for page in get_pages():
         for b in get_browsers():
             browser = Browser.create_browser(name=b["name"], path=b["path"], page=page)
-            logger = IdleLogger(browser)
-            logger.log(resolution=50, iterations=2, duration=1, plot=False)
+            logger = IdleLogger(browser, args.gadget_path)
+            logger.log(resolution=args.resolution, iterations=args.iterations, duration=args.duration, plot=False)
 
 def plot_data(filename, width=1024, height=300):
     gridExtra = importr("gridExtra")
@@ -164,10 +164,14 @@ if __name__ == "__main__":
 
     parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report")
     parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
+    parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
+    parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
+    parser.add_argument("-i", "--iterations", help="Number of iterations", default=10, type=int)
+    parser.add_argument("-p", "--gadget_path", help="Intel's Power Gadget path", default="")
     args = parser.parse_args()
 
     with open(args.config) as f:
         _config = json.load(f)
 
-    run_benchmark()
+    run_benchmark(args)
     plot_data(args.output)
