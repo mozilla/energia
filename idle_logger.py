@@ -145,12 +145,18 @@ def plot_data(width=1024, height=300):
     for i in range(0, n_pages):
         tmp_plots = []
 
+        # get highest usage
+        scale = 0
+        for j in range(0, n_browsers):
+            index = i*n_browsers + j
+            scale = max(_measurements["signal"][index].get_max_watts(), scale)
+
         for j in range(0, n_browsers):
             index = i*n_browsers + j
             title = _measurements["Browser"][index] + " " + _measurements["Page"][index]
             wplot = _measurements["signal"][index].get_time_freq_plots()[0] + \
                     ggplot2.ggtitle(title) + \
-                    ggplot2.scale_y_continuous(limits=ro.IntVector([0, 100]), expand=ro.IntVector([0, 0]))
+                    ggplot2.scale_y_continuous(limits=ro.IntVector([0, scale]))
             tmp_plots.append(wplot)
 
         plots.append(gridExtra.arrangeGrob(*tmp_plots, ncol=n_browsers))

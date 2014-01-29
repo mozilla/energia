@@ -109,6 +109,9 @@ class Signal:
         end = self._cumulative_joules[end]
         return end - start
 
+    def get_max_watts(self):
+        return max(self._sequence)
+
     def get_start_time(self):
         return self._start_time
 
