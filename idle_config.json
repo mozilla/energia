@@ -11,7 +11,7 @@
       {"name": "Firefox", "path": "firefox"}
     ],
     "Linux": [
-      {"name": "Chrome", "path": "chromium-nightly"},
+      {"name": "Chrome", "path": "chromium-browser"},
       {"name": "Firefox", "path": "firefox"}
     ]
   },

@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Idle power benchmark",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report")
+    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report.png")
     parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
