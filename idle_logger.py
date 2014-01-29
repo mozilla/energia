@@ -156,7 +156,7 @@ def plot_data(width=1024, height=300):
             title = _measurements["Browser"][index] + " " + _measurements["Page"][index]
             wplot = _measurements["signal"][index].get_time_freq_plots()[0] + \
                     ggplot2.ggtitle(title) + \
-                    ggplot2.scale_y_continuous(limits=ro.IntVector([0, scale]))
+                    ggplot2.scale_y_continuous(limits=ro.IntVector([0, scale+1]))
             tmp_plots.append(wplot)
 
         plots.append(gridExtra.arrangeGrob(*tmp_plots, ncol=n_browsers))
