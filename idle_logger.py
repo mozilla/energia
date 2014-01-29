@@ -12,6 +12,7 @@ from rpy2.robjects.packages import importr
 
 _measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
 _config = None
+_args = None
 
 class IdleLogger(PowerLogger):
     def __init__(self, browser, gadget_path):
@@ -21,8 +22,7 @@ class IdleLogger(PowerLogger):
     # This method is run before all iterations
     def initialize(self):
         self.browser.initialize()
-        sleep(100)
-        pass
+        sleep(_args.sleep)
 
     # Everything in here runs with the power logger enabled
     def execute_iteration(self):
@@ -42,7 +42,6 @@ class IdleLogger(PowerLogger):
     def finalize(self):
         self.browser.finalize()
         sleep(5)
-        pass
 
 class Browser:
     def __init__(self, name, path, page):
@@ -113,14 +112,14 @@ def get_browsers():
     os = platform.system()
     return _config["OS"][os]
 
-def run_benchmark(args):
+def run_benchmark():
     for page in get_pages():
         for b in get_browsers():
             browser = Browser.create_browser(name=b["name"], path=b["path"], page=page)
-            logger = IdleLogger(browser, args.gadget_path)
-            logger.log(resolution=args.resolution, iterations=args.iterations, duration=args.duration, plot=False)
+            logger = IdleLogger(browser, _args.gadget_path)
+            logger.log(resolution=_args.resolution, iterations=_args.iterations, duration=_args.duration, plot=False)
 
-def plot_data(filename, width=1024, height=300):
+def plot_data(width=1024, height=300):
     gridExtra = importr("gridExtra")
     grDevices = importr('grDevices')
 
@@ -137,7 +136,7 @@ def plot_data(filename, width=1024, height=300):
            ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
            ggplot2.theme_bw() + \
            ggplot2.ggtitle("Idle power measurements for {} runs of {}s each at {}hz on {}".format(
-               2, 1, 1000.0/50, "OSX"))
+               _args.iterations, _args.duration, 1000.0/_args.resolution, platform.system()))
 
     plots = [p]
     n_browsers = len(get_browsers())
@@ -149,11 +148,14 @@ def plot_data(filename, width=1024, height=300):
         for j in range(0, n_browsers):
             index = i*n_browsers + j
             title = _measurements["Browser"][index] + " " + _measurements["Page"][index]
-            tmp_plots.append(_measurements["signal"][index].get_time_freq_plots()[0] + ggplot2.ggtitle(title))
+            wplot = _measurements["signal"][index].get_time_freq_plots()[0] + \
+                    ggplot2.ggtitle(title) + \
+                    ggplot2.scale_y_continuous(limits=ro.IntVector([0, 100]), expand=ro.IntVector([0, 0]))
+            tmp_plots.append(wplot)
 
         plots.append(gridExtra.arrangeGrob(*tmp_plots, ncol=n_browsers))
 
-    grDevices.png(file=filename, width=width, height=height * len(plots))
+    grDevices.png(file=_args.output, width=width, height=height * len(plots))
     gridExtra.grid_arrange(gridExtra.arrangeGrob(*plots, nrow=n_pages + 1))
     grDevices.dev_off()
 
@@ -166,11 +168,12 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=10, type=int)
+    parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmark starts recording the power usage", default=100, type=int)
     parser.add_argument("-p", "--gadget_path", help="Intel's Power Gadget path", default="")
-    args = parser.parse_args()
+    _args = parser.parse_args()
 
-    with open(args.config) as f:
+    with open(_args.config) as f:
         _config = json.load(f)
 
-    run_benchmark(args)
-    plot_data(args.output)
+    run_benchmark()
+    plot_data()
