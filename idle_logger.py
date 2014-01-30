@@ -129,15 +129,16 @@ def plot_data(width=1024, height=300):
         "Joules": ro.FloatVector(_measurements["Joules"]),
         "CI": ro.FloatVector(_measurements["CI"])})
 
+    title = "Idle power measurements for {} runs of {}s each at {}hz on {}".format(
+               _args.iterations, _args.duration, 1000.0/_args.resolution, platform.system())
+
     p = ggplot2.ggplot(frame) + \
            ggplot2.aes_string(x="Page", y="Joules", fill="Browser") + \
            ggplot2.geom_bar(position="dodge", stat="identity") + \
            ggplot2.geom_errorbar(ggplot2.aes_string(ymax="Joules+CI", ymin="Joules-CI"),
                                  position=ggplot2.position_dodge(0.9), width=0.4) + \
            ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
-           ggplot2.theme_bw() + \
-           ggplot2.ggtitle("Idle power measurements for {} runs of {}s each at {}hz on {}".format(
-               _args.iterations, _args.duration, 1000.0/_args.resolution, platform.system()))
+           ggplot2.theme_bw() + ggplot2.ggtitle(title)
 
     plots = [p]
     n_browsers = len(get_browsers())
