@@ -287,7 +287,11 @@ class PowerLogger:
     def _mean_confidence_interval(self, signals, confidence=0.95):
         data = [signal.get_joules() for signal in signals]
         mean = numpy.mean(data)
-        se = scipy.stats.sem(data, ddof=0)
+
+        if len(data) == 1:
+            return mean, float('nan')
+
+        se = scipy.stats.sem(data)
         n = len(data)
         h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
         return mean, h
