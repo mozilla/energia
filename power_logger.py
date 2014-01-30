@@ -337,7 +337,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=60, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=2, type=int)
     parser.add_argument("-p", "--gadget_path", help="Intel's Power Gadget path", default="")
-    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report")
+    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report.png")
     parser.add_argument("--debug", help="Show debug messages", action="store_true")
     args = parser.parse_args()
 
