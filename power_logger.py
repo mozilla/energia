@@ -14,15 +14,9 @@ import uuid
 import tempfile
 import functools
 import multiprocessing
-import rpy2.robjects as ro
-import rpy2.robjects.lib.ggplot2 as ggplot2
 
 from bisect import bisect_left
 from datetime import datetime, timedelta
-from rpy2.robjects.packages import importr
-
-gridExtra = importr("gridExtra")
-grDevices = importr('grDevices')
 
 def binary_search(a, x, lo=0, hi=None):
     hi = hi if hi is not None else len(a)
@@ -133,6 +127,13 @@ class Signal:
             self._alabels.append(label)
 
     def get_time_freq_plots(self, title=""):
+        #Use Rpy2 only if plotting is required
+        import rpy2.robjects as ro
+        import rpy2.robjects.lib.ggplot2 as ggplot2
+        from rpy2.robjects.packages import importr
+        gridExtra = importr("gridExtra")
+        grDevices = importr('grDevices')
+
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
 
@@ -290,17 +291,11 @@ class PowerLogger:
         h = se * scipy.stats.t.ppf((1 + confidence)/2., n - 1)
         return mean, h
 
-    def _plot_closest_signal(self, signals, freq, duration, mean, range, png_output):
-        signal = self.get_closest_signal(signals, mean)
-        title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
-                 format(mean, range, len(signals), duration, freq)
-        signal.plot(png_output, title)
-
     def get_closest_signal(self, signals, mean):
         min = lambda x, y: x if abs(x.get_joules() - mean) < abs(y.get_joules() - mean) else y
         return functools.reduce(min, signals)
 
-    def log(self, resolution, iterations, duration=None, png_output="report", plot=True):
+    def log(self, resolution, iterations, duration=None, png_output="report"):
         directory = self._create_tmp_dir()
         frequency = 1000.0/resolution
 
@@ -310,7 +305,6 @@ class PowerLogger:
 
         signals = self._collect_power_usage(directory, resolution, frequency, duration, iterations)
         m, r = self._mean_confidence_interval(signals)
-        self._plot_closest_signal(signals, frequency, duration, m, r, png_output) if plot else None
         self._remove_tmp_dir(directory)
         self.process_measurements(m, r, signals, self.get_closest_signal(signals, m), duration, frequency)
 

@@ -1,14 +1,11 @@
 import os
 import platform
-import rpy2.robjects as ro
-import rpy2.robjects.lib.ggplot2 as ggplot2
 import argparse
 import json
 
 from power_logger import PowerLogger
 from subprocess import Popen
 from time import sleep
-from rpy2.robjects.packages import importr
 
 _measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
 _config = None
@@ -117,9 +114,13 @@ def run_benchmark():
         for b in get_browsers():
             browser = Browser.create_browser(name=b["name"], path=b["path"], page=page)
             logger = IdleLogger(browser, _args.gadget_path)
-            logger.log(resolution=_args.resolution, iterations=_args.iterations, duration=_args.duration, plot=False)
+            logger.log(resolution=_args.resolution, iterations=_args.iterations, duration=_args.duration)
 
 def plot_data(width=1024, height=300):
+    #Use Rpy2 only if plotting is required
+    import rpy2.robjects as ro
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+    from rpy2.robjects.packages import importr
     gridExtra = importr("gridExtra")
     grDevices = importr('grDevices')
 
@@ -161,15 +162,27 @@ def plot_data(width=1024, height=300):
 
         plots.append(gridExtra.arrangeGrob(*tmp_plots, ncol=n_browsers))
 
-    grDevices.png(file=_args.output, width=width, height=height * len(plots))
+    grDevices.png(file=_args.png_output, width=width, height=height * len(plots))
     gridExtra.grid_arrange(gridExtra.arrangeGrob(*plots, nrow=n_pages + 1))
     grDevices.dev_off()
+
+def dump_csv():
+    m = _measurements
+
+    with open(_args.csv_output, 'w') as f:
+        f.write("OS, Browser, Page, Joules, CI, Runs, Sec, Hz\n")
+        for i in range(len(m["Browser"])):
+            f.write("{}, {}, {}, {:.2f}, {:.2f}, {}, {}, {:.2f}\n".format(platform.system(),
+                m["Browser"][i], m["Page"][i], m["Joules"][i], m["CI"][i], m["Runs"][i],
+                m["sec"][i], m["hz"][i]))
 
 if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Idle power benchmark",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-o", "--output", help="Path of the final .png plot", default="report.png")
+    parser.add_argument("-o", "--png_output", help="Path of the final .png plot", default="report.png")
+    parser.add_argument("-t", "--csv_output", help="Path of the emitted csv file", default="report.csv")
+    parser.add_argument("-l", "--plot", help="Enable plotting", default=False)
     parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
@@ -182,4 +195,6 @@ if __name__ == "__main__":
         _config = json.load(f)
 
     run_benchmark()
-    plot_data()
+    dump_csv()
+    if _args.plot:
+        plot_data()
