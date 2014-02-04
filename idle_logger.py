@@ -99,6 +99,8 @@ class UbuntuBrowser(Browser):
     def finalize(self):
         if self.browser == "chromium-browser":
             os.system("wmctrl -c Chromium")
+        elif self.browser == "firefox-trunk":
+            os.system("wmctrl -c Nightly")
         else:
             os.system("wmctrl -c " + self.browser)
 
