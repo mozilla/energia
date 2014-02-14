@@ -7,9 +7,21 @@ from power_logger import PowerLogger
 from subprocess import Popen
 from time import sleep
 
+_plotting_enabled = False
 _measurements = {"Browser":[], "Page":[], "Watts":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
 _config = None
 _args = None
+
+try:
+    #Use Rpy2 & ggplot2 only if plotting is required
+    import rpy2.robjects as ro
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+    from rpy2.robjects.packages import importr
+    gridExtra = importr("gridExtra")
+    grDevices = importr('grDevices')
+    _plotting_enabled = True
+except:
+    pass
 
 class IdleLogger(PowerLogger):
     def __init__(self, browser, gadget_path):
@@ -119,12 +131,9 @@ def run_benchmark():
             logger.log(resolution=_args.resolution, iterations=_args.iterations, duration=_args.duration)
 
 def plot_data(width=1024, height=300):
-    #Use Rpy2 only if plotting is required
-    import rpy2.robjects as ro
-    import rpy2.robjects.lib.ggplot2 as ggplot2
-    from rpy2.robjects.packages import importr
-    gridExtra = importr("gridExtra")
-    grDevices = importr('grDevices')
+    if not _plotting_enabled:
+        print("Warning: plotting requested but disabled due to unmet dependencies (rpy2 & ggplot2)")
+        return
 
     frame = ro.DataFrame({"Browser": ro.StrVector(_measurements["Browser"]),
         "Page": ro.StrVector(_measurements["Page"]),
