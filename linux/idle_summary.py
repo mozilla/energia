@@ -101,8 +101,6 @@ if __name__ == "__main__":
     _args = parser.parse_args()
 
     # Prepare result dataset
-    #tmp = ["%c0", "GHz", "TSC", "SMI", "%c1", "%c3", "%c6", "%c7", "CTMP",
-           #"PTMP", "%pc2", "%pc3", "%pc6", "%pc7", "Pkg_W", "Cor_W", "GFX_W"]
     for field in ps.fields:
         _fields.append(field)
         _fields.append(field + " SD")
