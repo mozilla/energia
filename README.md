@@ -15,4 +15,4 @@ Power benchmarking utilities used to collect and plot data of the energy usage o
 python3 idle_benchmark.py -c config.json -e 50 -d 30 -i 5
 ```
 
-The command will collect data about the idle usage of the browser and the websites specified in the configuration file and produce a csv file.
+The command will collect data about the idle usage of the browser and the websites specified in the configuration file and produce a csv file and plot, if R and ggplot2 are available on the system.
