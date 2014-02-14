@@ -37,8 +37,10 @@ class PowerGadget:
             else:
                 raise Exception("Intel Power Gadget executable not found")
         elif self._system == "Windows":
-            if(shutil.which("PowerLog.exe")):
-                self._path = "PowerLog.exe"
+#            if(shutil.which("PowerLog.exe")):
+#                self._path = "PowerLog.exe"
+            if os.path.exists("c:\\Program Files\\Intel\\Power Gadget 2.7\\PowerLog2.7.exe"):
+                self._path = "c:\\Program Files\\Intel\\Power Gadget 2.7\\PowerLog2.7.exe"
             else:
                 raise Exception("Intel Power Gadget executable not found")
         else:
@@ -58,7 +60,7 @@ class PowerGadget:
             os.system(self._path +  " -e " + str(resolution) + " -d " +
                       str(duration) + " > " + filename)
         else:
-            os.system(self._path +  " -resolution " + str(resolution) + " -duration " +
+            os.system('"%s"' % self._path +  " -resolution " + str(resolution) + " -duration " +
                       str(duration) + " -file " + filename)
 
 def plot_signal(signal, sampling_frequency, interval, filename, title, show=False):
@@ -183,7 +185,7 @@ def main():
         raise Exception("iterations has to be greater than 1")
     if(args.duration <= 0):
         raise Exception("duration has to be greater than 0")
-    if(args.resolution < 50):
+    if(args.resolution < 20):
         raise Exception("resolution has to be greater or equal to 50")
 
     powergadget = PowerGadget(args.gadget_path)
