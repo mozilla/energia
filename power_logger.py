@@ -86,6 +86,8 @@ class PowerGadget:
 
 class Signal:
     def __init__(self, sequence, timestamps, cumulative_joules, frequency, duration):
+        assert(len(sequence) == len(timestamps) and len(sequence) == len(cumulative_joules))
+
         self._sequence = numpy.array(sequence)
         self._timestamps = timestamps
         self._cumulative_joules = cumulative_joules
@@ -93,8 +95,24 @@ class Signal:
         self._duration = duration
         self._start_time = timestamps[0]
         self._end_time = timestamps[0] + timedelta(0, duration)
-        self._aticks = []
-        self._alabels = []
+
+
+    def get_avg_watts(self, start_ts=None, end_ts=None):
+        start = 0
+        end = len(self._cumulative_joules) - 1
+
+        if start_ts:
+            start = bisect_left(self._timestamps, start_ts)
+            assert(start <= self._end_time)
+            assert(start >= self._start_time)
+
+        if end_ts:
+            end = bisect_left(self._timestamps, end_ts)
+            assert(end <= self._end_time)
+            assert(end >= self._start_time)
+
+        return numpy.mean(self._sequence[start:end+1])
+
 
     def get_joules(self, start_ts=None, end_ts=None):
         start = 0
@@ -205,9 +223,16 @@ class Signal:
                     if ts < start_time:
                         ts = ts + one_day
 
+                    watts = float(fields[4])
+                    joules = float(fields[5])
+
+                    # filter invalid data
+                    if watts == 0:
+                        continue
+
                     timestamps.append(ts)
-                    signal.append(float(fields[4]))
-                    cumulative_joules.append(float(fields[5]))
+                    signal.append(watts)
+                    cumulative_joules.append(joules)
         except FileNotFoundError:
             raise Exception("PowerLog failed to generate a valid logfile")
             return sys.exit(-1)
@@ -281,7 +306,7 @@ class PowerLogger:
         return signal
 
     def _mean_confidence_interval(self, signals, confidence=0.95):
-        data = [signal.get_joules() for signal in signals]
+        data = [signal.get_avg_watts() for signal in signals]
         mean = numpy.mean(data)
 
         if len(data) == 1:
@@ -294,12 +319,12 @@ class PowerLogger:
 
     def _plot_closest_signal(self, signals, freq, duration, mean, range, png_output):
         signal = self.get_closest_signal(signals, mean)
-        title = "Mean of {:.2f} += {:.2f} Joules for {} runs of {} s at {:.2f} hz".\
+        title = "Mean of {:.2f} += {:.2f} Watts for {} runs of {} s at {:.2f} hz".\
                 format(mean, range, len(signals), duration, freq)
         signal.plot(png_output, title)
 
     def get_closest_signal(self, signals, mean):
-        min = lambda x, y: x if abs(x.get_joules() - mean) < abs(y.get_joules() - mean) else y
+        min = lambda x, y: x if abs(x.get_avg_watts() - mean) < abs(y.get_avg_watts() - mean) else y
         return functools.reduce(min, signals)
 
     def log(self, resolution, iterations, duration=None, png_output="report.png", plot=False):

@@ -7,7 +7,7 @@ from power_logger import PowerLogger
 from subprocess import Popen
 from time import sleep
 
-_measurements = {"Browser":[], "Page":[], "Joules":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
+_measurements = {"Browser":[], "Page":[], "Watts":[], "CI":[], "Runs":[], "sec":[], "hz":[], "signal":[]}
 _config = None
 _args = None
 
@@ -28,7 +28,7 @@ class IdleLogger(PowerLogger):
     def process_measurements(self, m, r, signals, closest_signal, duration, frequency):
         _measurements["Browser"].append(self.browser.get_name())
         _measurements["Page"].append(self.browser.get_page())
-        _measurements["Joules"].append(m)
+        _measurements["Watts"].append(m)
         _measurements["CI"].append(r)
         _measurements["Runs"].append(len(signals))
         _measurements["sec"].append(duration)
@@ -128,16 +128,16 @@ def plot_data(width=1024, height=300):
 
     frame = ro.DataFrame({"Browser": ro.StrVector(_measurements["Browser"]),
         "Page": ro.StrVector(_measurements["Page"]),
-        "Joules": ro.FloatVector(_measurements["Joules"]),
+        "Watts": ro.FloatVector(_measurements["Watts"]),
         "CI": ro.FloatVector(_measurements["CI"])})
 
     title = "Idle power measurements for {} runs of {}s each at {}hz on {}".format(
                _args.iterations, _args.duration, 1000.0/_args.resolution, platform.system())
 
     p = ggplot2.ggplot(frame) + \
-           ggplot2.aes_string(x="Page", y="Joules", fill="Browser") + \
+           ggplot2.aes_string(x="Page", y="Watts", fill="Browser") + \
            ggplot2.geom_bar(position="dodge", stat="identity") + \
-           ggplot2.geom_errorbar(ggplot2.aes_string(ymax="Joules+CI", ymin="Joules-CI"),
+           ggplot2.geom_errorbar(ggplot2.aes_string(ymax="Watts+CI", ymin="Watts-CI"),
                                  position=ggplot2.position_dodge(0.9), width=0.4) + \
            ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
            ggplot2.theme_bw() + ggplot2.ggtitle(title)
@@ -173,10 +173,10 @@ def dump_csv():
     m = _measurements
 
     with open(_args.csv_output, 'w') as f:
-        f.write("OS, Browser, Page, Joules, CI, Runs, Sec, Hz\n")
+        f.write("OS, Browser, Page, Watts, CI, Runs, Sec, Hz\n")
         for i in range(len(m["Browser"])):
             f.write("{}, {}, {}, {:.2f}, {:.2f}, {}, {}, {:.2f}\n".format(platform.system(),
-                m["Browser"][i], m["Page"][i], m["Joules"][i], m["CI"][i], m["Runs"][i],
+                m["Browser"][i], m["Page"][i], m["Watts"][i], m["CI"][i], m["Runs"][i],
                 m["sec"][i], m["hz"][i]))
 
 if __name__ == "__main__":
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--png_output", help="Path of the final .png plot", default="report.png")
     parser.add_argument("-t", "--csv_output", help="Path of the emitted csv file", default="report.csv")
     parser.add_argument("-l", "--plot", help="Enable plotting", default=False)
-    parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
+    parser.add_argument("-c", "--config", help="Configuration file", default="config.json")
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=10, type=int)
