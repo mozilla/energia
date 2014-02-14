@@ -9,8 +9,10 @@ Power benchmarking utilities used to collect and plot data of the energy usage o
 * R with ggplot2 and gridExtra
 * On Linux the **msr** and **cpuid** modules have to be loaded
 
-## Example usage as command line tool
+## Idle benchmark on Windows, OSX or Linux
 
 ```bash
-python3 idle_logger.py -e 50 -d 30 -i 5
+python3 idle_benchmark.py -c config.json -e 50 -d 30 -i 5
 ```
+
+The command will collect data about the idle usage of the browser and websites specified in the configuration file and produce a csv file.
