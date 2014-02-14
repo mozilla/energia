@@ -126,17 +126,6 @@ class Signal:
     def get_length(self):
         return len(self._sequence)
 
-    def annotate(self, annotations):
-        if not annotations:
-            return
-
-        for ts, label in annotations:
-            if ts < self._start_time or ts > self._end_time:
-                continue
-
-            self._aticks.append((ts -self._start_time).total_seconds()/self._duration)
-            self._alabels.append(label)
-
     def get_time_freq_plots(self, title=""):
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
@@ -231,7 +220,6 @@ class PowerLogger:
     def __init__(self, gadget_path="", debug=False):
         self._powergadget = PowerGadget(gadget_path)
         self._debug = debug
-        self._annotations = []
 
     def _create_tmp_dir(self):
         directory = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
@@ -273,7 +261,6 @@ class PowerLogger:
 
     def _run_iteration(self, resolution, frequency, duration, report):
         # Decorate power usage logging with template methods
-        self._annotations = []
         self.initialize_iteration()
 
         start_time = datetime.now()
@@ -285,7 +272,6 @@ class PowerLogger:
         self.finalize_iteration()
 
         signal = Signal.parse(report + ".log", frequency, duration, start_time, self._debug)
-        signal.annotate(self._annotations)
 
         assert(end_time < signal.get_end_time())
 
@@ -329,9 +315,6 @@ class PowerLogger:
         self._plot_closest_signal(signals, frequency, duration, m, r, png_output) if plot else None
         self._remove_tmp_dir(directory)
         self.process_measurements(m, r, signals, self.get_closest_signal(signals, m), duration, frequency)
-
-    def add_marker(self, message):
-        self._annotations.append((datetime.now(), message))
 
     def initialize_iteration(self):
         pass
