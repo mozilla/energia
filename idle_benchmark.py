@@ -148,8 +148,11 @@ def plot_data(width=1024, height=300):
            ggplot2.geom_bar(position="dodge", stat="identity") + \
            ggplot2.geom_errorbar(ggplot2.aes_string(ymax="Watts+CI", ymin="Watts-CI"),
                                  position=ggplot2.position_dodge(0.9), width=0.4) + \
-           ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13)}) + \
-           ggplot2.theme_bw() + ggplot2.ggtitle(title)
+           ggplot2.theme_bw() + \
+           ggplot2.theme(**{'plot.title': ggplot2.element_text(size = 13),
+                            'axis.text.x': ggplot2.element_text(angle=90, hjust=1),
+                            'axis.title.x': ggplot2.element_blank()}) + \
+           ggplot2.ggtitle(title)
 
     plots = [p]
     n_browsers = len(get_browsers())
