@@ -94,7 +94,7 @@ class OSXBrowser(Browser):
 
     def initialize(self):
         if self.description == "Safari":
-            os.system("open -a " + self.browser.replace(" ", "\\ ") + " " + "http://" + self.page)
+            os.system("open -a " + self.browser.replace(" ", "\\ ") + " " + ("http://" if not self.page.startswith("http") else "") + self.page)
         else:
             os.system("open -a " + self.browser.replace(" ", "\\ ") + " --args " + self.page)
 
