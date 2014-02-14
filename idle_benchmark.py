@@ -194,7 +194,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-o", "--png_output", help="Path of the final .png plot", default="report.png")
     parser.add_argument("-t", "--csv_output", help="Path of the emitted csv file", default="report.csv")
-    parser.add_argument("-l", "--plot", help="Enable plotting", default=False)
     parser.add_argument("-c", "--config", help="Configuration file", default="config.json")
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms", default=50, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
@@ -208,5 +207,4 @@ if __name__ == "__main__":
 
     run_benchmark()
     dump_csv()
-    if _args.plot:
-        plot_data()
+    plot_data()
