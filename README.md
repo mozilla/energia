@@ -1,4 +1,4 @@
-# browser_power_utils
+# energia
 
 Power benchmarking utilities used to collect and plot data of the energy usage of different desktop browsers on Windows, OSX & Linux.
 
