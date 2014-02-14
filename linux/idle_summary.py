@@ -2,11 +2,11 @@ import argparse
 import json
 import platform
 import os
+import power_summary as ps
 
 from time import sleep
 from subprocess import Popen, PIPE
 from pandas import DataFrame
-from power_summary import PowerSummary
 
 _fields = []
 _config = None
@@ -14,7 +14,7 @@ _args = None
 _output = None
 _result_df = None
 
-class IdleSummary(PowerSummary):
+class IdleSummary(ps.PowerSummary):
     def __init__(self, browser, duration, iterations):
         super().__init__(duration, iterations)
         self._browser = browser
@@ -65,7 +65,7 @@ class UbuntuBrowser(Browser):
         super().__init__(name, path, page)
 
     def initialize(self):
-        os.system(self.browser + " " + self.page + "&")
+        os.system(self.browser + " --user-data-dir=~ " + self.page + "&")
 
     def finalize(self):
         if self.browser == "chromium-browser":
@@ -101,9 +101,9 @@ if __name__ == "__main__":
     _args = parser.parse_args()
 
     # Prepare result dataset
-    tmp = ["%c0", "GHz", "TSC", "SMI", "%c1", "%c3", "%c6", "%c7", "CTMP",
-           "PTMP", "%pc2", "%pc3", "%pc6", "%pc7", "Pkg_W", "Cor_W", "GFX_W"]
-    for field in tmp:
+    #tmp = ["%c0", "GHz", "TSC", "SMI", "%c1", "%c3", "%c6", "%c7", "CTMP",
+           #"PTMP", "%pc2", "%pc3", "%pc6", "%pc7", "Pkg_W", "Cor_W", "GFX_W"]
+    for field in ps.fields:
         _fields.append(field)
         _fields.append(field + " SD")
     _fields.append("Browser")
