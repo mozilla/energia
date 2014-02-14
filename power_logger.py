@@ -18,6 +18,17 @@ import multiprocessing
 from bisect import bisect_left
 from datetime import datetime, timedelta
 
+_plotting_enabled = False
+
+try:
+    #Use Rpy2 & ggplot2 only if plotting is required
+    import rpy2.robjects as ro
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+    from rpy2.robjects.packages import importr
+    _plotting_enabled = True
+except:
+    pass
+
 def binary_search(a, x, lo=0, hi=None):
     hi = hi if hi is not None else len(a)
     pos = bisect_left(a,x,lo,hi)
@@ -127,10 +138,6 @@ class Signal:
             self._alabels.append(label)
 
     def get_time_freq_plots(self, title=""):
-        #Use Rpy2 only if plotting is required
-        import rpy2.robjects as ro
-        import rpy2.robjects.lib.ggplot2 as ggplot2
-
         length = self.get_length()
         t = scipy.linspace(0, self._duration, len(self._sequence))
 
@@ -160,7 +167,10 @@ class Signal:
         return (watts, freq)
 
     def plot(self, filename, title="", width=1024, height=512):
-        from rpy2.robjects.packages import importr
+        if not _plotting_enabled:
+            print("Warning: plotting requested but disabled due to unmet dependencies (rpy2 & ggplot2)")
+            return
+
         gridExtra = importr("gridExtra")
         grDevices = importr('grDevices')
 
