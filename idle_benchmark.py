@@ -82,8 +82,15 @@ class WinBrowser(Browser):
         super().__init__(name, path, page)
 
     def initialize(self):
+        path = ""
+        file = self.browser
+
+        if os.path.isabs(self.browser):
+            drive, path_and_file = os.path.splitdrive(self.browser)
+            path, file = os.path.split(path_and_file)
+
         # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
-        os.system("start " + self.browser + " " + self.page)
+        os.system("start /D \"" + path + "\" " + file + " " + self.page)
 
     def finalize(self):
         os.system("taskkill /im " + self.browser + ".exe")
