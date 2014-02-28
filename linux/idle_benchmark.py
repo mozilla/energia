@@ -4,6 +4,9 @@ import platform
 import os
 import power_summary as ps
 
+sys.path.append("..")
+
+from browser import Browser
 from time import sleep
 from subprocess import Popen, PIPE
 from pandas import DataFrame
@@ -38,42 +41,6 @@ class IdleSummary(ps.PowerSummary):
     def finalize(self):
         self._browser.finalize()
         sleep(5)
-
-class Browser:
-    def __init__(self, name, path, page):
-        self.page = page
-        self.browser = path
-        self.description = name
-
-    def get_name(self):
-        return self.description
-
-    def get_page(self):
-        return self.page
-
-    @staticmethod
-    def create_browser(name, path, page):
-        os = platform.system()
-
-        if os == "Linux":
-            return UbuntuBrowser(name, path, page)
-        else:
-            assert(0)
-
-class UbuntuBrowser(Browser):
-    def __init__(self, name, path, page):
-        super().__init__(name, path, page)
-
-    def initialize(self):
-        os.system(self.browser + " --user-data-dir=~ " + self.page + "&")
-
-    def finalize(self):
-        if self.browser == "chromium-browser":
-            os.system("wmctrl -c Chromium")
-        elif self.browser == "firefox-trunk":
-            os.system("wmctrl -c Nightly")
-        else:
-            os.system("wmctrl -c " + self.browser)
 
 def get_pages():
     return _config["Pages"]
