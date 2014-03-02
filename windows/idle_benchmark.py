@@ -11,6 +11,7 @@ from browser import Browser
 from time import sleep
 from subprocess import Popen, PIPE
 from pandas import DataFrame
+from scipy import stats
 
 _fields = []
 _config = None
@@ -30,10 +31,10 @@ class IdleSummary(ps.PowerSummary):
     def process_measurements(self, df):
         global _result_df
         summary = df.mean().to_dict()
-        stds = df.std().to_dict()
+        cis = df.apply(lambda x: stats.sem(x) * stats.t.ppf((1.95)/2., len(x) - 1)).to_dict()
 
-        for key, value in stds.items():
-            summary[key+" SD"] = value
+        for key, value in cis.items():
+            summary[key+" CI"] = value
 
         summary["Browser"] = self._browser.get_name()
         summary["Page"] = self._browser.get_page()
@@ -66,13 +67,13 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=10, type=int)
     parser.add_argument("-o", "--output", help="Path of the csv output", default="report.csv")
     parser.add_argument("-c", "--config", help="Configuration file", default="idle_config.json")
-    parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmark starts recording the power usage", default=100, type=int)
+    parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmark starts recording the power usage", default=500, type=int)
     _args = parser.parse_args()
 
     # Prepare result dataset
     for field in ps.fields:
         _fields.append(field)
-        _fields.append(field + " SD")
+        _fields.append(field + " CI")
     _fields.append("Browser")
     _fields.append("Page")
     _result_df = DataFrame(columns=_fields)

@@ -29,10 +29,10 @@ class IdleSummary(ps.PowerSummary):
     def process_measurements(self, df):
         global _result_df
         summary = df.mean().to_dict()
-        stds = df.std().to_dict()
+        cis = df.apply(lambda x: stats.sem(x) * stats.t.ppf((1.95)/2., len(x) - 1)).to_dict()
 
-        for key, value in stds.items():
-            summary[key+" SD"] = value
+        for key, value in cis.items():
+            summary[key+" CI"] = value
 
         summary["Browser"] = self._browser.get_name()
         summary["Page"] = self._browser.get_page()

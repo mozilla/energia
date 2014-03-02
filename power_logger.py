@@ -96,7 +96,6 @@ class Signal:
         self._start_time = timestamps[0]
         self._end_time = timestamps[0] + timedelta(0, duration)
 
-
     def get_avg_watts(self, start_ts=None, end_ts=None):
         start = 0
         end = len(self._cumulative_joules) - 1
@@ -112,7 +111,6 @@ class Signal:
             assert(end >= self._start_time)
 
         return numpy.mean(self._sequence[start:end+1])
-
 
     def get_joules(self, start_ts=None, end_ts=None):
         start = 0

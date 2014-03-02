@@ -9,10 +9,10 @@ import pandas
 from subprocess import Popen, PIPE
 from pandas import DataFrame
 
-fields = ["CPU % (Platform)", "CPU % (Logical)", "CPU Proc % (Platform)", "CPU Proc % (Logical)", "Idle Wakeups", "Idle Proc Wakeups"]
+fields = ["CPU % (Platform)", "CPU % (Logical)", "CPU Proc % (Platform)", "CPU Proc % (Logical)", "Idle Wakeups", "Idle Proc Wakeups", "Power Impact", "Power Proc Impact"]
 
 class BLA:
-    def __init__(self, duration=5, image=None):
+    def __init__(self, duration, image=None):
         self._process = None
         self._duration = duration
         self._directory = "tmp"
@@ -35,6 +35,7 @@ class BLA:
         entry["CPU % (Platform)"] = aa_df['CPU % (Platform)'][0]
         entry["CPU % (Logical)"] = aa_df['CPU % (Logical)'][0]
         entry["Idle Wakeups"] = aa_df['CSwitches from Idle'][0]
+        entry["Power Impact"] = aa_df['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'][0]
         print(aa_df['CPU % (Platform)'][0])
 
         if self._image != None:
@@ -43,6 +44,7 @@ class BLA:
                 entry["CPU Proc % (Platform)"] = selection["CPU % (Platform)"].sum()
                 entry["CPU Proc % (Logical)"] = selection["CPU % (Logical)"].sum()
                 entry["Idle Proc Wakeups"] = selection["CSwitches from Idle"].sum()
+                entry["Power Proc Impact"] = selection['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'].sum()
 
         #shutil.rmtree(self._directory)
         return entry
@@ -73,9 +75,18 @@ class PowerSummary:
         self.finalize_iteration()
         return df.append(summary, ignore_index=True)
 
+    def _filter_outliers(self, df):
+        if len(df) <= 1:
+            return df
+
+        cpu = df["CPU % (Platform)"]
+        # SD is not robust
+        return df[(cpu >= cpu.median() - cpu.mad()*5) & (cpu <= cpu.median() + cpu.mad()*5)]
+
     def log(self, filename=None):
         self.initialize()
-        df = self._collect_power_usage()
+        # There are some bad outliers here
+        df = self._filter_outliers(self._collect_power_usage())
         df.describe().to_csv(filename) if filename else None
         self.process_measurements(df)
         self.finalize()
