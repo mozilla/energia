@@ -4,6 +4,7 @@ import json
 import platform
 
 from wrappers.PowerGadget import PowerGadget
+from wrappers.BLA import BLA
 from browser import Browser
 from time import sleep
 from pandas import DataFrame, concat
@@ -21,6 +22,7 @@ class Benchmark:
         for page in self._get_pages():
             for browser in self._get_browsers():
                 browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page)
+                args.image = os.path.basename(browser.get_path())
                 browser.initialize()
                 partial = None
                 sleep(self._args.sleep)
@@ -43,6 +45,8 @@ class Benchmark:
     def _create_benchmark(benchmark, args):
         if benchmark == "PowerGadget":
             return PowerGadget(args)
+        elif benchmark == "BLA":
+            return BLA(args)
         else:
             raise Exception("Benchmark not found")
 
@@ -77,6 +81,10 @@ if __name__ == "__main__":
         benchmark = Benchmark(args)
     elif args.benchmark == "PowerGadget":
         benchmark = PowerGadget(args)
+    elif args.benchmark == "BLA":
+        benchmark = BLA(args)
+    else:
+        raise Exception("Benchmark not found")
 
     df = benchmark.log()
     df.to_csv(args.output_csv)

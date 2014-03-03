@@ -19,7 +19,7 @@ class PowerGadget(Wrapper):
     def __init__(self, args):
         super().__init__(args)
 
-        self._fields = ["Joules", "Watt"]
+        self._fields = ["Processor Joules", "Processor Watt", "IA Joules", "IA Watt", "GT Joules", "GT Watt"]
         self._system = platform.system()
 
         directory = "tmp"
@@ -51,9 +51,6 @@ class PowerGadget(Wrapper):
         else:
             raise Exception("Platform is not supported.")
 
-    def __del__(self):
-        shutil.rmtree(os.path.split(self._logfile)[0])
-
     def start(self):
         self._log_process = multiprocessing.Process(target=self._start)
         self._log_process.start()
@@ -74,14 +71,22 @@ class PowerGadget(Wrapper):
 
     def join(self):
         self._log_process.join()
-        res = self._parse()
-        return res
+        return self._parse()
 
     def _parse(self):
-        joules = 0
-        watts = 0
-        joules_re = re.compile(".*\(Joules\) = (.*)")
-        watt_re = re.compile(".*\(Watt\) = (.*)")
+        summary = {"Processor Watt" : 0,
+                   "Processor Joules": 0,
+                   "IA Watt": 0,
+                   "IA Joules": 0,
+                   "GT Watt": 0,
+                   "GT Joules": 0}
+
+        regexps = {"Processor Watt" : re.compile(".* Processor Energy_0 \(Joules\) = (.*)"),
+                   "Processor Joules": re.compile(".* Processor Power_0 \(Watt\) = (.*)"),
+                   "IA Watt": re.compile(".* IA Energy_0 \(Joules\) = (.*)"),
+                   "IA Joules": re.compile(".* IA Power_0 \(Watt\) = (.*)"),
+                   "GT Watt": re.compile(".* GT Energy_0 \(Joules\) = (.*)"),
+                   "GT Joules": re.compile(".* GT Power_0 \(Watt\) = (.*)")}
 
         try:
             with open(self._logfile) as f:
@@ -95,17 +100,15 @@ class PowerGadget(Wrapper):
                         break
 
                 for line in metadata:
-                    m = re.match(joules_re, line)
-                    if m:
-                        joules = float(m.group(1))
-
-                    m = re.match(watt_re, line)
-                    if m:
-                        watt = float(m.group(1))
+                    for key, regexp in regexps.items():
+                        m = re.match(regexp, line)
+                        if m:
+                            summary[key] = float(m.group(1))
 
         except FileNotFoundError:
             raise Exception("PowerLog failed to generate a valid logfile")
             return sys.exit(-1)
 
-        assert(watt > 0 and joules > 0)
-        return {"Watt" : watt, "Joules": joules}
+        assert(summary['Processor Watt'] > 0)
+        shutil.rmtree(os.path.split(self._logfile)[0])
+        return summary
