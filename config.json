@@ -18,5 +18,7 @@
 
   "Pages": ["about:blank", "www.youtube.com", "www.yahoo.com", "www.amazon.com",
             "www.ebay.com", "www.google.com", "www.facebook.com", "www.wikipedia.com",
-            "www.craigslist.com"]
+            "www.craigslist.com"],
+
+  "Benchmarks": ["PowerGadget"]
 }
