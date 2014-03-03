@@ -10,7 +10,7 @@ from pandas import DataFrame, concat
 
 class Benchmark:
     def __init__(self, args):
-        self._args = args #browser and 
+        self._args = args
 
         with open(args.config) as f:
             self._config = json.load(f)
