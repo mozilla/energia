@@ -22,12 +22,6 @@ class PowerGadget(Wrapper):
         self._fields = ["Processor Joules", "Processor Watt", "IA Joules", "IA Watt", "GT Joules", "GT Watt"]
         self._system = platform.system()
 
-        directory = "tmp"
-        self._logfile = os.path.join(directory, "PowerLog.ipg")
-
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
         if self._args.path:
             if os.path.exists(self._args.path) and os.access(self._args.path, os.X_OK):
                 self._log = self._args.path
@@ -52,6 +46,12 @@ class PowerGadget(Wrapper):
             raise Exception("Platform is not supported.")
 
     def start(self):
+        directory = "tmp"
+        self._logfile = os.path.join(directory, "PowerLog.ipg")
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         self._log_process = multiprocessing.Process(target=self._start)
         self._log_process.start()
 
@@ -81,8 +81,8 @@ class PowerGadget(Wrapper):
                    "GT Watt": 0,
                    "GT Joules": 0}
 
-        regexps = {"Processor Watt" : re.compile(".* Processor Energy_0 \(Joules\) = (.*)"),
-                   "Processor Joules": re.compile(".* Processor Power_0 \(Watt\) = (.*)"),
+        regexps = {"Processor Watt" : re.compile(".* Processor Power_0 \(Watt\) = (.*)"),
+                   "Processor Joules": re.compile(".* Processor Energy_0 \(Joules\) = (.*)"),
                    "IA Watt": re.compile(".* IA Energy_0 \(Joules\) = (.*)"),
                    "IA Joules": re.compile(".* IA Power_0 \(Watt\) = (.*)"),
                    "GT Watt": re.compile(".* GT Energy_0 \(Joules\) = (.*)"),
@@ -110,5 +110,6 @@ class PowerGadget(Wrapper):
             return sys.exit(-1)
 
         assert(summary['Processor Watt'] > 0)
-        shutil.rmtree(os.path.split(self._logfile)[0])
+        #TODO
+        #shutil.rmtree(os.path.split(self._logfile)[0])
         return summary

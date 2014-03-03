@@ -64,16 +64,14 @@ if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="External browser benchmark suite",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-e", "--resolution", help="Sampling resolution in ms, if applicable", default=50, type=int)
+    parser.add_argument("-e", "--resolution", help="Sampling resolution in ms, if applicable", default=100, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
     parser.add_argument("-i", "--iterations", help="Number of iterations", default=5, type=int)
-    parser.add_argument("-o", "--output_csv", help="Path of the final csv output", default="report.csv")
-    parser.add_argument("-l", "--plot", help="Path of the final plot, if applicable", default="report.png")
+    parser.add_argument("-o", "--output", help="Path of the final csv output", default="report.csv")
     parser.add_argument("-p", "--path", help="Tool path", default="")
     parser.add_argument("-b", "--benchmark", help="Benchmark to run", default="idle")
     parser.add_argument("-c", "--config", help="Configuration file", default="config.json")
-    parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmarks start recording", default=100, type=int)
-    parser.add_argument("--debug", help="Show debug messages", action="store_true")
+    parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmarks start recording", default=120, type=int)
     args = parser.parse_args()
 
     benchmark = None
@@ -87,4 +85,4 @@ if __name__ == "__main__":
         raise Exception("Benchmark not found")
 
     df = benchmark.log()
-    df.to_csv(args.output_csv)
+    df.to_csv(args.output)

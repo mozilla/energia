@@ -46,5 +46,5 @@ class BLA(Wrapper):
                 entry["Idle Proc Wakeups"] = selection["CSwitches from Idle"].sum()
                 entry["Power Proc Impact"] = selection['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'].sum()
 
-        shutil.rmtree(self._directory)
+        #shutil.rmtree(self._directory)
         return entry
