@@ -30,11 +30,11 @@ To run the benchmark on a cluster, issue on each slave the following command:
 python3 benchmark.py -a 192.168.0.1 # the address has to point to your master node
 ```
 
-Finally launch the server process a different node:
+Finally launch the server process on a different node:
 
 ```bash
 python3 benchmark.py --is_server ...
 ```
 
 The server configuration will then be propagated to all slaves automatically and the websites 
-partioned evenly among all slaves. Once the execution is complete, a csv file is generated on the master node.
+partioned evenly among all of them. Once the execution is complete, a csv file is generated on the master node.
