@@ -22,9 +22,19 @@ class BLA(Wrapper):
         if self._image:
             self._image = self._image if self._image.endswith(".exe") else self._image + ".exe"
 
+        if self._args.path:
+            if os.path.exists(self._args.path) and os.access(self._args.path, os.X_OK):
+                self._tool = self._args.path
+            else:
+                raise Exception("Intel Battery Life Analyzer not found")
+        elif shutil.which("BLA.exe"):
+                self._tool = "BLA.exe"
+        else:
+            raise Exception("Intel Battery Life Analyzer not found")
+
     def start(self):
         # Can't use tempfile bc BLA doesn't support abbreviated filenames
-        self._process = Popen('BLA.exe c sw:{} -o {}'.format(self._args.duration, self._directory))
+        self._process = Popen('{} c sw:{} -o {}'.format(self._tool, self._args.duration, self._directory))
 
     def join(self):
         self._process.wait()

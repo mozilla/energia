@@ -38,6 +38,10 @@ class Benchmark:
 
     def run(self, benchmark, browser, partial):
         df = benchmark.log()
+        df['Browser'] = browser.get_name()
+        df['Page'] = browser.get_page()
+        df['OS'] = browser.get_os()
+
         res = df if partial is None else partial.combine_first(df)
         return res
 
@@ -66,7 +70,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms, if applicable", default=100, type=int)
     parser.add_argument("-d", "--duration", help="Collection duration in s", default=30, type=int)
-    parser.add_argument("-i", "--iterations", help="Number of iterations", default=5, type=int)
+    parser.add_argument("-i", "--iterations", help="Number of iterations", default=10, type=int)
     parser.add_argument("-o", "--output", help="Path of the final csv output", default="report.csv")
     parser.add_argument("-p", "--path", help="Tool path", default="")
     parser.add_argument("-b", "--benchmark", help="Benchmark to run", default="idle")

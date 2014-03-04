@@ -17,6 +17,9 @@ class Browser:
     def get_path(self):
         return self.path
 
+    def get_os(self):
+        return platform.system()
+
     @staticmethod
     def create_browser(name, path, page):
         os = platform.system()

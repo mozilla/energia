@@ -23,18 +23,22 @@ class Wrapper:
         for key, value in cis.items():
             summary[key + " CI"] = value
 
-        summary["iterations"] = self._args.iterations
-        summary["duration"] = self._args.duration
+        summary["Iterations"] = self._args.iterations
+        summary["Duration"] = self._args.duration
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
-        if len(df) <= 1:
+        length = len(df)
+        if length <= 1:
             return df
 
         for c in df.columns:
             series = df[c]
             # SD is not robust
             df = df[(series >= series.median() - series.mad()*5) & (series <= series.median() + series.mad()*5)]
+
+        if length != len(df):
+            print("Warning: {} outliers removed.".format(length - len(df)))
 
         return df
 
