@@ -89,4 +89,4 @@ if __name__ == "__main__":
         raise Exception("Benchmark not found")
 
     df = benchmark.log()
-    df.to_csv(args.output)
+    df.to_csv(args.output, float_format="%.3f")

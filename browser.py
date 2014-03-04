@@ -49,7 +49,7 @@ class WinBrowser(Browser):
         os.system("start /D \"" + path + "\" " + file + " " + self.page)
 
     def finalize(self):
-        os.system("taskkill /im " + self.browser + ".exe")
+        os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
 
 class OSXBrowser(Browser):
     def __init__(self, name, path, page):

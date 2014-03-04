@@ -34,7 +34,7 @@ class BLA(Wrapper):
 
     def start(self):
         # Can't use tempfile bc BLA doesn't support abbreviated filenames
-        self._process = Popen('{} c sw:{} -o {}'.format(self._tool, self._args.duration, self._directory))
+        self._process = Popen('{} c sw:{} -o {} > NUL 2>&1'.format(self._tool, self._args.duration, self._directory), shell=True)
 
     def join(self):
         self._process.wait()
@@ -55,5 +55,6 @@ class BLA(Wrapper):
                 entry["Idle Proc Wakeups"] = selection["CSwitches from Idle"].sum()
                 entry["Power Proc Impact"] = selection['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'].sum()
 
+        #TODO
         #shutil.rmtree(self._directory)
         return entry
