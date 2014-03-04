@@ -46,7 +46,6 @@ class BLA(Wrapper):
         entry["CPU % (Logical)"] = aa_df['CPU % (Logical)'][0]
         entry["Idle Wakeups"] = aa_df['CSwitches from Idle'][0]
         entry["Power Impact"] = aa_df['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'][0]
-        print(aa_df['CPU % (Platform)'][0])
 
         if self._image != None:
             selection = aa_df[aa_df['Image Name'] == self._image]

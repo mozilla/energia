@@ -38,7 +38,7 @@ class Wrapper:
             df = df[(series >= series.median() - series.mad()*5) & (series <= series.median() + series.mad()*5)]
 
         if length != len(df):
-            print("Warning: {} outliers removed.".format(length - len(df)))
+            print("Warning: {} outlier(s) removed.".format(length - len(df)))
 
         return df
 
