@@ -74,7 +74,7 @@ class ClientBenchmark(Benchmark):
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REQ)
         self._socket.connect("tcp://" + args.address + ":8888")
-        self._socket.setsockopt(zmq.RCVTIMEO, 300000)
+        self._socket.setsockopt(zmq.RCVTIMEO, 5*60*1000)
 
         try:
             header, payload = self._send("get_configuration")
@@ -95,6 +95,7 @@ class ClientBenchmark(Benchmark):
                 break
 
             if header == "end":
+                self._send("data", df)
                 break
 
             page, browser = payload
@@ -125,10 +126,11 @@ if __name__ == "__main__":
 
     parser.set_defaults(is_server=False)
     args = parser.parse_args()
+    df = None
 
     if args.is_server:
         server = Server(args)
-        server.run()
+        df = server.run()
     else:
         benchmark = None
 
@@ -146,7 +148,7 @@ if __name__ == "__main__":
 
         df = benchmark.log()
 
-        if df is not None:
-            df.to_csv(args.output, float_format="%.3f")
-        else:
-            print("Warning: no output produced")
+    if df is not None:
+        df.to_csv(args.output, float_format="%.3f")
+    else:
+        print("Warning: no output produced")
