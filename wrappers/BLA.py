@@ -39,7 +39,7 @@ class BLA(Wrapper):
             raise Exception("Intel Battery Life Analyzer not found")
 
     def start(self):
-        self._process = Popen('{} c sw:{} -o {}'.format(self._tool, self._args.duration, self._directory), shell=True)
+        self._process = Popen('{} c sw:{} -o {} > NUL 2>&1'.format(self._tool, self._args.duration, self._directory), shell=True)
 
     def join(self):
         self._process.wait()
