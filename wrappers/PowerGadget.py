@@ -15,8 +15,9 @@ from pandas import DataFrame
 get_long_path = lambda x: x
 try:
     import win32api
-except:
     get_long_path= win32api.GetLongPathName
+except:
+    pass
 
 class PowerGadget(Wrapper):
     _osx_exec = "PowerLog"

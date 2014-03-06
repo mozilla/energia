@@ -3,7 +3,11 @@ import sys
 import os
 import shutil
 import tempfile
-import win32api
+
+try:
+    import win32api
+except:
+    pass
 
 sys.path.append("..")
 
