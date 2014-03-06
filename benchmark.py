@@ -126,6 +126,7 @@ if __name__ == "__main__":
 
     parser.set_defaults(is_server=False)
     args = parser.parse_args()
+    args.image = None
     df = None
 
     if args.is_server:

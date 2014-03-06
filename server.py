@@ -54,19 +54,31 @@ class Server:
         return df
 
     def _handle_configuration(self):
+        print("A client has connected")
+
         self._nclients += 1
         self._send("config", (self._args, self._config))
 
     def _handle_page_pull(self, payload):
+        print("A client is pulling a page")
+
         try:
             page, browser = next(self._get_next_page[payload])
             self._send("page", (page, browser))
         except StopIteration:
             self._send("end")
             self._exhausted[payload] = True
+        except KeyError:
+            self._send("end")
 
     def _handle_data(self, df, payload):
+        print("A client has disconnected")
+
         self._send("ack")
+
+        if payload is None:
+            return df
+
         self._nclients -=1
         df = payload.combine_first(df)
         df.to_csv(self._tmp_file, float_format="%.3f") # better safe than sorry
