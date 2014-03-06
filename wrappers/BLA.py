@@ -61,5 +61,5 @@ class BLA(Wrapper):
                 entry["Power Proc Impact"] = selection['Power Impact (W) - HuronRiver - Sandybridge - Dual Core'].sum()
 
         #TODO
-        #shutil.rmtree(self._directory)
+        shutil.rmtree(self._directory)
         return entry

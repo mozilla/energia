@@ -115,5 +115,5 @@ class PowerGadget(Wrapper):
 
         assert(summary['Processor Watt'] > 0)
         #TODO
-        #shutil.rmtree(os.path.split(self._logfile)[0])
+        shutil.rmtree(os.path.split(self._logfile)[0])
         return summary
