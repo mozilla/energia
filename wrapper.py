@@ -34,6 +34,10 @@ class Wrapper:
 
         for c in df.columns:
             series = df[c]
+
+            if series.isnull().any():
+                continue
+
             # SD is not robust
             df = df[(series >= series.median() - series.mad()*5) & (series <= series.median() + series.mad()*5)]
 
