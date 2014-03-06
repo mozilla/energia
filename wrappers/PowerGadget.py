@@ -76,10 +76,10 @@ class PowerGadget(Wrapper):
     def _parse(self):
         summary = {"Processor Watt" : 0,
                    "Processor Joules": 0,
-                   "IA Watt": 0,
-                   "IA Joules": 0,
-                   "GT Watt": 0,
-                   "GT Joules": 0}
+                   "IA Watt": float('nan'),
+                   "IA Joules": float('nan'),
+                   "GT Watt": float('nan'),
+                   "GT Joules": float('nan')}
 
         regexps = {"Processor Watt" : re.compile(".* Processor Power_0 \(Watt\) = (.*)"),
                    "Processor Joules": re.compile(".* Processor Energy_0 \(Joules\) = (.*)"),
