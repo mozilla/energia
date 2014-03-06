@@ -12,6 +12,12 @@ sys.path.append("..")
 from wrapper import Wrapper
 from pandas import DataFrame
 
+get_long_path = lambda x: x
+try:
+    import win32api
+except:
+    get_long_path= win32api.GetLongPathName
+
 class PowerGadget(Wrapper):
     _osx_exec = "PowerLog"
     _win_exec = "PowerLog.exe"
@@ -47,7 +53,7 @@ class PowerGadget(Wrapper):
             raise Exception("Platform is not supported.")
 
     def start(self):
-        directory = tempfile.mkdtemp()
+        directory = get_long_path(tempfile.mkdtemp())
         self._logfile = os.path.join(directory, "PowerLog.ipg")
         self._log_process = multiprocessing.Process(target=self._start)
         self._log_process.start()
