@@ -2,6 +2,7 @@ import pandas
 import sys
 import os
 import shutil
+import tempfile
 
 sys.path.append("..")
 
@@ -13,7 +14,7 @@ class BLA(Wrapper):
     def __init__(self, args):
         super().__init__(args)
         self._process = None
-        self._directory = "tmp"
+        self._directory = tempfile.mkdtemp()
         self._image = args.image if args.image else None
         self._fields = ["CPU % (Platform)", "CPU % (Logical)", "CPU Proc % (Platform)",
                         "CPU Proc % (Logical)", "Idle Wakeups", "Idle Proc Wakeups",
@@ -33,7 +34,6 @@ class BLA(Wrapper):
             raise Exception("Intel Battery Life Analyzer not found")
 
     def start(self):
-        # Can't use tempfile bc BLA doesn't support abbreviated filenames
         self._process = Popen('{} c sw:{} -o {} > NUL 2>&1'.format(self._tool, self._args.duration, self._directory), shell=True)
 
     def join(self):

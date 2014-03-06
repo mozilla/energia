@@ -5,6 +5,7 @@ import os
 import multiprocessing
 import pandas
 import re
+import tempfile
 
 sys.path.append("..")
 
@@ -46,12 +47,8 @@ class PowerGadget(Wrapper):
             raise Exception("Platform is not supported.")
 
     def start(self):
-        directory = "tmp"
+        directory = tempfile.mkdtemp()
         self._logfile = os.path.join(directory, "PowerLog.ipg")
-
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
         self._log_process = multiprocessing.Process(target=self._start)
         self._log_process.start()
 
