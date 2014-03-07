@@ -2,6 +2,8 @@ import zmq
 import json
 import pickle
 import os
+import threading
+import functools
 
 from pandas import DataFrame, concat
 
@@ -15,20 +17,27 @@ class Server:
         with open(args.config) as f:
             self._config = json.load(f)
 
-        self._socket = _context.socket(zmq.REP)
-        self._socket.setsockopt(zmq.RCVTIMEO, 30*60*1000)
-        self._socket.bind("tcp://*:8888")
-
-        self._get_next_page = {}
-        self._exhausted = {}
+        self._scatter_socket =  {}
         for os in self._config["OS"]:
-            self._get_next_page[os] = self._page_generator(os)
-            self._exhausted[os] = False
+            self._scatter_socket[os] = self._create_scatter_socket(os)
 
-    def _page_generator(self, os):
-        for page in self._get_pages():
-            for browser in self._get_browsers(os):
-                yield page, browser
+        self._gather_socket = _context.socket(zmq.PULL)
+        self._gather_socket.bind("tcp://*:9003")
+
+    def run(self):
+        scatter = threading.Thread(target=self._scatter)
+        scatter.start()
+        df = self._gather()
+        scatter.join()
+        os.remove(self._tmp_file)
+        return df
+
+    def _create_scatter_socket(self, os):
+        ports = {"Windows": 9000, "Darwin": 9001, "Linux": 9002}
+        socket = _context.socket(zmq.PUSH)
+        socket.setsockopt(zmq.SNDTIMEO, 5000)
+        socket.bind("tcp://*:{}".format(ports[os]))
+        return socket
 
     def _get_pages(self):
         return self._config["Pages"]
@@ -36,54 +45,38 @@ class Server:
     def _get_browsers(self, os):
         return self._config["OS"][os]
 
-    def run(self):
-        self._nclients = 0
+    def _scatter(self):
+        for os in self._config["OS"]:
+            for page in self._get_pages():
+                for browser in self._get_browsers(os):
+                    socket = self._scatter_socket[os]
+                    print("sending {}".format(page))
+
+                    while True:
+                        try:
+                            self._send(socket, self._build_message(page, browser))
+                            break
+                        except zmq.error.Again:
+                            print("Warning: no {} workers reachable, retrying...".format(os))
+
+    def _gather(self):
         df = DataFrame()
+        nmsg = len(self._config["Pages"]) * len(self._config["OS"])
+        nrcv = 0
 
-        while self._nclients != 0 or not all(self._exhausted.values()):
-            header, payload = pickle.loads(self._socket.recv())
+        #TODO: Handle missing data
+        while nrcv != nmsg:
+            msg = pickle.loads(self._gather_socket.recv())
+            df = df.append(msg)
+            df.to_csv(self._tmp_file, float_format="%.3f") # better safe than sorry
+            nrcv += 1
 
-            if header == "get_configuration":
-                self._handle_configuration()
-            elif header == "pull":
-                self._handle_page_pull(payload)
-            elif header == "data":
-                df = self._handle_data(df, payload)
-
-        os.remove(self._tmp_file)
         return df
 
-    def _handle_configuration(self):
-        print("A client has connected")
+    def _build_message(self, page, browser):
+        #TODO: Don't send everything
+        return {"page": page, "browser": browser, "args": self._args, "config": self._config}
 
-        self._nclients += 1
-        self._send("config", (self._args, self._config))
-
-    def _handle_page_pull(self, payload):
-        print("A client is pulling a page")
-
-        try:
-            page, browser = next(self._get_next_page[payload])
-            self._send("page", (page, browser))
-        except StopIteration:
-            self._send("end")
-            self._exhausted[payload] = True
-        except KeyError:
-            self._send("end")
-
-    def _handle_data(self, df, payload):
-        print("A client has disconnected")
-
-        self._send("ack")
-
-        if payload is None:
-            return df
-
-        self._nclients -=1
-        df = payload.combine_first(df)
-        df.to_csv(self._tmp_file, float_format="%.3f") # better safe than sorry
-        return df
-
-    def _send(self, header, payload = None):
-        msg = pickle.dumps((header, payload))
-        self._socket.send(msg)
+    def _send(self, socket, msg):
+        msg = pickle.dumps(msg)
+        socket.send(msg)

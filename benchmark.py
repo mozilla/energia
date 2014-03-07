@@ -72,42 +72,24 @@ class Benchmark:
 class ClientBenchmark(Benchmark):
     def __init__(self, args):
         self._context = zmq.Context()
-        self._socket = self._context.socket(zmq.REQ)
-        self._socket.connect("tcp://" + args.address + ":8888")
-        self._socket.setsockopt(zmq.RCVTIMEO, 5*60*1000)
+        self._scatter_socket = self._context.socket(zmq.PULL)
+        self._gather_socket = self._context.socket(zmq.PUSH)
 
-        try:
-            header, payload = self._send("get_configuration")
-            self._args, self._config = payload
-        except:
-            self._context.destroy(0)
-            raise Exception("Failure to connect to server: timeout")
+        ports = {"Windows": 9000, "Darwin": 9001, "Linux": 9002}
+        self._scatter_socket.connect("tcp://{}:{}".format(args.address, ports[platform.system()]))
+        self._gather_socket.connect("tcp://{}:9003".format(args.address))
 
     def log(self):
-        df = None
-
         while True:
-            try:
-                header, payload = self._send("pull", platform.system())
-            except zmq.error.Again:
-                self._context.destroy(0)
-                print("Warning: premature termination, server not reachable")
-                break
+            msg = pickle.loads(self._scatter_socket.recv())
+            self._args = msg["args"]
+            self._config = msg["config"]
+            page = msg["page"]
+            browser = msg["browser"]
 
-            if header == "end":
-                self._send("data", df)
-                break
-
-            page, browser = payload
-            df = self._run_iteration(df, page, browser)
-
-        return df
-
-    def _send(self, header, payload = None):
-        msg = pickle.dumps((header, payload))
-        self._socket.send(msg)
-        return pickle.loads(self._socket.recv())
-
+            print("Processing request for {} on {}".format(page, browser["name"]))
+            df = self._run_iteration(None, page, browser)
+            self._gather_socket.send(pickle.dumps(df))
 
 if __name__ == "__main__":
     parser= argparse.ArgumentParser(description="Desktop Browser Power benchmarking Utility",
@@ -121,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--benchmark", help="Benchmark to run", default="idle")
     parser.add_argument("-c", "--config", help="Configuration file", default="config.json")
     parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmarks start recording", default=120, type=int)
-    parser.add_argument("-r", "--is_server", dest="is_server", action="store_true")
+    parser.add_argument("-r", "--is_server", help="True if instance is a server", dest="is_server", action="store_true")
     parser.add_argument("-a", "--address", help="Server address", default=None)
 
     parser.set_defaults(is_server=False)
