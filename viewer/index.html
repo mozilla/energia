@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Energia Dashboard</title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="js/miso_dataset.js"></script>
+    <script type="text/javascript" src="js/jstat.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+  </head>
+  <body>
+    <div id='header'>
+      <div id='banner'>Energia Dashboard</div>
+      <div class='widget'>
+        <label>Scroll to:</label>
+        <select id='columnPicker'></select>
+      </div>
+      <div class='widget'>
+        <label>Sort by (t-test based):</label>
+        <select id='sortPicker'></select>
+      </div>
+      <div class='widget'>
+        <label>Limit:</label>
+        <select id='limitPicker'>
+          <option> 10</option>
+          <option> 25</option>
+          <option> 50</option>
+          <option>100</option>
+          <option>250</option>
+          <option>500</option>
+          <option>NA</option>
+        </select>
+      </div>
+    </div>
+    <div id='body'></div>
+  </body>
+</html>
