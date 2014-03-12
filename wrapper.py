@@ -18,7 +18,7 @@ class Wrapper:
         df = self._filter_outliers(df)
 
         summary = df.mean().to_dict()
-        cis = df.apply(lambda x: stats.sem(x) * stats.t.ppf((1.95)/2., len(x) - 1)).to_dict()
+        cis = df.apply(lambda x: stats.sem(x, ddof=1) * stats.t.ppf((1.95)/2., len(x) - 1)).to_dict()
 
         for key, value in cis.items():
             summary[key + " CI"] = value
