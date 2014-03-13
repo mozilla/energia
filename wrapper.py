@@ -15,7 +15,7 @@ class Wrapper:
 
     def _compute_summary(self, df):
         df = df.convert_objects(convert_numeric=True)
-        df = self._filter_outliers(df)
+        df, nfiltered = self._filter_outliers(df)
 
         summary = df.mean().to_dict()
         cis = df.apply(lambda x: stats.sem(x, ddof=1) * stats.t.ppf((1.95)/2., len(x) - 1)).to_dict()
@@ -23,14 +23,15 @@ class Wrapper:
         for key, value in cis.items():
             summary[key + " CI"] = value
 
-        summary["Iterations"] = self._args.iterations
+        summary["Iterations"] = self._args.iterations - nfiltered
         summary["Duration"] = self._args.duration
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
         length = len(df)
+
         if length <= 1:
-            return df
+            return df, 0
 
         for c in df.columns:
             series = df[c]
@@ -44,7 +45,7 @@ class Wrapper:
         if length != len(df):
             print("Warning: {} outlier(s) removed.".format(length - len(df)))
 
-        return df
+        return df, length - len(df)
 
     def _run_iteration(self, df):
         self.start()
