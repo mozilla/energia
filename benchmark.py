@@ -25,7 +25,8 @@ class Benchmark:
         for page in self._get_pages():
             for browser in self._get_browsers():
                 df = self._run_iteration(df, page, browser)
-        return df
+
+        return df.sort(['OS', 'Page', 'Browser'])
 
     def _run_iteration(self, df, page, browser):
         browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page)
