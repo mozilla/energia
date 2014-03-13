@@ -36,8 +36,11 @@ class Benchmark:
         sleep(self._args.sleep)
 
         for benchmark in self._get_benchmarks():
-            benchmark = Benchmark._create_benchmark(benchmark, self._args)
-            partial = self._run_benchmark(benchmark, browser, partial)
+            try:
+                benchmark = Benchmark._create_benchmark(benchmark, self._args)
+                partial = self._run_benchmark(benchmark, browser, partial)
+            except:
+                print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
         return partial if df is None else concat([df, partial])
