@@ -25,8 +25,9 @@ function drawChart() {
   ds.fetch({
     success: function(){
       loadToolbar(ds);
+      ds = filter(ds);
       sort(ds);
-      ds = select(ds);
+      ds = selectHottest(ds);
       plotMetrics(ds)
     }
   });
@@ -40,6 +41,7 @@ function loadToolbar(ds) {
 
   var picker = setupScrollPicker();
   var sorter = setupSortPicker();
+  var filter = setupFilter();
 
   if (picker.childNodes.length > 0 && sorter.childNodes.length > 0)
     return;
@@ -47,14 +49,28 @@ function loadToolbar(ds) {
   addOptionToPicker(picker, "");
 
   ds.eachColumn(function(columnName, column, index){
-    if (columnName != "X" && !columnName.endsWith("CI") &&
-        columnName != "Page" && columnName != "Browser" &&
-        columnName != "OS" && !columnName.endsWith("Impact") &&
-        columnName != "Iterations" && columnName != "Duration") {
+    if (selectColumn(columnName)) {
       addOptionToPicker(picker, columnName);
       addOptionToPicker(sorter, columnName);
     }
   });
+}
+
+function setupFilter() {
+  var input = document.getElementById('filter');
+
+  if (window.location.hash.length > 0)
+    input.value = window.location.hash.substring(1)
+
+  input.onkeypress = function(e) {
+    if (e.keyCode == 13) {
+      window.location.hash = input.value;
+      document.getElementById('body').innerHTML = "";
+      drawChart();
+    }
+  }
+
+  return input;
 }
 
 function setupScrollPicker() {
@@ -79,6 +95,7 @@ function setupScrollPicker() {
 
 function setupSortPicker() {
   var select = document.getElementById('sortPicker');
+
   select.onchange = function(e) {
     drawChart();
   }
@@ -211,7 +228,20 @@ function stdFromMeanCI(mean, CI, n) {
   return Math.sqrt(n)*sem;
 }
 
-function select(ds) {
+function filter(ds) {
+  var value = document.getElementById('filter').value;
+
+  if (value.length == 0)
+    return ds;
+
+  ds = ds.rows(function(row) {
+    return row['Page'].search(value) != -1;
+  });
+
+  return ds;
+}
+
+function selectHottest(ds) {
   var browsers = ds.countBy('Browser').toJSON();
   var nbrowsers = browsers.length;
   var picker = document.getElementById('limitPicker');
@@ -233,16 +263,21 @@ function plotMetrics(ds) {
   var nsamples = ds.rowByPosition(0)['Iterations'];
 
   ds.eachColumn(function(columnName, column, index){
-    if (columnName != "X" && !columnName.endsWith("CI") &&
-        columnName != "Page" && columnName != "Browser" &&
-        columnName != "OS" && !columnName.endsWith("Impact") &&
-        columnName != "Iterations" && columnName != "Duration") {
+    if (selectColumn(columnName)) {
       var df = convertData(ds, columnName)
       var div = createChartContainer(i);
       plot(ds, df, div, columnName);
       i++;
     }
   });
+}
+
+function selectColumn(columnName) {
+  return (columnName != "X" && !columnName.endsWith("CI") &&
+          columnName != "Page" && columnName != "Browser" &&
+          columnName != "OS" && !columnName.endsWith("Impact") &&
+          columnName != "Iterations" && columnName != "Duration" &&
+          !columnName.endsWith("Joules"));
 }
 
 function createChartContainer(index) {
@@ -302,8 +337,7 @@ function plot(ds, df, chart, title) {
   data.addRows(df);
   var options = {title: title,
                  fontSize: 12,
-                 legend: {position: 'none'},
-                 chartArea:{top:30, left:150, height:66*df.length},
+                 chartArea:{top:30, left:100, width: 250, height:66*df.length},
                  bar: {groupWidth: '67%'} };
   var chart = new google.visualization.BarChart(chart);
   chart.draw(data, options);
