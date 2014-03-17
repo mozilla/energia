@@ -9,7 +9,7 @@ from pandas import DataFrame, concat
 
 _context = zmq.Context()
 
-class Server:
+class Dispatcher:
     def __init__(self, args):
         self._args = args
         self._tmp_file = "tmp.csv"

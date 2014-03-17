@@ -11,7 +11,7 @@ from wrappers.BLA import BLA
 from browser import Browser
 from time import sleep
 from pandas import DataFrame, concat
-from server import Server
+from dispatcher import Dispatcher
 
 class Benchmark:
     def __init__(self, args):
@@ -107,24 +107,28 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--benchmark", help="Benchmark to run", default="idle")
     parser.add_argument("-c", "--config", help="Configuration file", default="config.json")
     parser.add_argument("-s", "--sleep", help="Seconds to sleep before the benchmarks start recording", default=120, type=int)
-    parser.add_argument("-r", "--is_server", help="True if instance is a server", dest="is_server", action="store_true")
-    parser.add_argument("-a", "--address", help="Server address", default=None)
+    parser.add_argument("-r", "--is_dispatcher", help="Set if this instance is a dispatcher", dest="is_dispatcher", action="store_true")
+    parser.add_argument("-w", "--is_worker", help="Set if this instance is a worker", dest="is_worker", action="store_true")
+    parser.add_argument("-a", "--address", help="Dispatcher address", default=None)
 
-    parser.set_defaults(is_server=False)
+    parser.set_defaults(is_dispatcher=False)
+    parser.set_defaults(is_worker=False)
+
     args = parser.parse_args()
     args.image = None
     df = None
 
-    if args.is_server:
-        server = Server(args)
-        df = server.run()
+    if args.is_dispatcher:
+        dispatcher = Dispatcher(args)
+        df = dispatcher.run()
     else:
         benchmark = None
 
         if args.benchmark == "idle":
-            if args.address is None:
+            if not args.is_worker:
                 benchmark = Benchmark(args)
             else:
+                assert(args.address is not None)
                 benchmark = ClientBenchmark(args)
         elif args.benchmark == "PowerGadget":
             benchmark = PowerGadget(args)

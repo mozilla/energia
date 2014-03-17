@@ -23,18 +23,20 @@ python3 benchmark.py -c config.json
 The command will collect data about the idle usage of the browsers and the websites specified in the configuration file and produce a csv file.
 
 ## Distributed execution
-The benchmark supports distributed execution through a simple master-slave architecture.
-To run the benchmark on a cluster, issue on each slave the following command:
+The benchmark supports distributed execution through a simple dispatcher-worker architecture.
+To run the benchmark on a cluster, issue on each worker the following command:
 
 ```bash
-python3 benchmark.py -a 192.168.0.1 # the address has to point to your master node
+python3 benchmark.py --is_worker -a 192.168.0.1 # the address has to point to your dispatcher node
 ```
 
-Finally launch the server process on a different node:
+Finally launch the dispatcher process on a different node:
 
 ```bash
-python3 benchmark.py --is_server ...
+python3 benchmark.py --is_dispatcher ...
 ```
 
-The server configuration will then be propagated to all slaves automatically and the websites 
-partioned evenly among all of them. Once the execution is complete, a csv file is generated on the master node.
+Note that the dispatcher and the workers can be started in any order at any time.
+
+The dispatcher's configuration will then be propagated to all slaves automatically and the websites 
+partioned evenly among all of them. Once the execution is complete, a csv file is generated on the dispatcher node.
