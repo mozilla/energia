@@ -4,10 +4,12 @@ import json
 import platform
 import zmq
 import time
+import sys
 import pickle
 
 from wrappers.PowerGadget import PowerGadget
 from wrappers.BLA import BLA
+from wrappers.IPPET import IPPET
 from browser import Browser
 from time import sleep
 from pandas import DataFrame, concat
@@ -33,11 +35,12 @@ class Benchmark:
         args.image = os.path.basename(browser.get_path())
         browser.initialize()
         partial = None
+
         sleep(self._args.sleep)
 
         for benchmark in self._get_benchmarks():
             try:
-                benchmark = Benchmark._create_benchmark(benchmark, self._args)
+                benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
                 partial = self._run_benchmark(benchmark, browser, partial)
             except:
                 print("Warning: benchmark {} not supported".format(benchmark))
@@ -52,14 +55,17 @@ class Benchmark:
         df['OS'] = browser.get_os()
 
         res = df if partial is None else partial.combine_first(df)
+
         return res
 
     @staticmethod
-    def _create_benchmark(benchmark, args):
+    def _create_benchmark(benchmark, args, browser):
         if benchmark == "PowerGadget":
             return PowerGadget(args)
         elif benchmark == "BLA":
             return BLA(args)
+        elif benchmark == "IPPET":
+            return IPPET(args, browser)  # IPPET uses only browser process data
         else:
             raise Exception("Benchmark not found")
 
@@ -96,7 +102,7 @@ class ClientBenchmark(Benchmark):
             self._gather_socket.send(pickle.dumps(df))
 
 if __name__ == "__main__":
-    parser= argparse.ArgumentParser(description="Desktop Browser Power benchmarking Utility",
+    parser = argparse.ArgumentParser(description="Desktop Browser Power benchmarking Utility",
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("-e", "--resolution", help="Sampling resolution in ms, if applicable", default=100, type=int)
@@ -126,7 +132,7 @@ if __name__ == "__main__":
 
         if args.benchmark == "idle":
             if not args.is_worker:
-                benchmark = Benchmark(args)
+               benchmark = Benchmark(args)
             else:
                 assert(args.address is not None)
                 benchmark = ClientBenchmark(args)
@@ -134,6 +140,8 @@ if __name__ == "__main__":
             benchmark = PowerGadget(args)
         elif args.benchmark == "BLA":
             benchmark = BLA(args)
+        elif args.benchmark == "IPPET":
+            benchmark = IPPET(args)
         else:
             raise Exception("Benchmark not found")
 
