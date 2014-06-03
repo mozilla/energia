@@ -69,7 +69,7 @@ class WinBrowser(Browser):
 
         # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
         # TODO: consider using mozprocess here
-        os.system("start /D \"" + path + "\" " + file + " " + self.page)
+        os.system("start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page)
 
     def finalize(self):
         os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
