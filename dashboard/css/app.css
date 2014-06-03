@@ -1,0 +1,46 @@
+html *{
+  font-family: Arial;
+  font-size: 12px;
+}
+
+label {
+  font-weight: bold;
+}
+
+.chart {
+  width: 450px;
+  height: 300px;
+  position: absolute;
+}
+
+.widget{
+  margin-left: 5px;
+  position: relative;
+  display: inline-block;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+#banner {
+  right: 5px;
+  top: 50%;
+  position: absolute;
+  font-weight:bold;
+  font-size: 14px;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+#header {
+  position: fixed;
+  height:30px;
+  width: 100%;
+  z-index: 100;
+  background-color:rgba(0, 0, 0, 0.3)
+}
+
+#body {
+  position: relative;
+  top: 35px;
+}
