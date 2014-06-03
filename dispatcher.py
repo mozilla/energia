@@ -33,7 +33,8 @@ class Dispatcher:
         scatter.start()
         df = self._gather()
         scatter.join()
-        os.remove(self._tmp_file)
+        if os.path.exists(self._tmp_file):
+            os.remove(self._tmp_file)
         return df
 
     def _create_scatter_socket(self, os):
