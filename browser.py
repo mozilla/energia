@@ -57,11 +57,13 @@ class WinBrowser(Browser):
         if os.path.isabs(self.browser):
             #uninstall
             os.system(installer_file + ' /S')
+            print("Uninstalling old browser")
 
         if os.path.isabs(self.browser):
             print("Error, this should be uninstalled by now")
 
         os.system(installer_file + ' -ms')
+        print("Installing new browser {}".format(installer_file))
 
         if os.path.isabs(self.browser):
             drive, path_and_file = os.path.splitdrive(self.browser)
@@ -69,7 +71,9 @@ class WinBrowser(Browser):
 
         # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
         # TODO: consider using mozprocess here
+        print("going to execute: start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page)
         os.system("start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page)
+        print("started the browser, onto real tasks")
 
     def finalize(self):
         os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
