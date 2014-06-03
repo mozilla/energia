@@ -43,19 +43,19 @@ class WinBrowser(Browser):
         path = ""
         file = self.browser
         tmpdir = tempfile.mkdtemp()
-        installer_file = installerURL.split('/')[-1]
+        installer_file = installURL.split('/')[-1]
 
         try:
             urllib.urlretrieve(installURL, tmpdir)
-        except Exception:
-            print("Exception while retrieving installation from: {}".format(installURL))
+        except Exception, e:
+            print "Exception while getting url: %s" % e
 
         if os.path.isabs(self.browser):
             #uninstall
             os.system('%s\\%s /S' % (tmpdir, installer_file))
 
         if os.path.isabs(self.browser):
-            print("Error, this should be uninstalled by now")
+            print "Error, this should be uninstalled by now"
 
         os.system('%s\\%s -ms' % (tmpdir, installer_file))
 
