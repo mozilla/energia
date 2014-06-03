@@ -2,6 +2,7 @@ import platform
 import os
 import tempfile
 import urllib
+import sys
 
 class Browser:
     def __init__(self, name, path, page, installURL):
@@ -50,7 +51,7 @@ class WinBrowser(Browser):
         try:
             urllib.urlretrieve(self.installURL, installer_file)
         except Exception:
-            print("Exception while getting url: {}".format(self.installURL))
+            print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info[0]))
 
         if os.path.isabs(self.browser):
             #uninstall
