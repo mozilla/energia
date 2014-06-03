@@ -51,7 +51,7 @@ class WinBrowser(Browser):
         try:
             urllib.urlretrieve(self.installURL, installer_file)
         except Exception:
-            print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info[0]))
+            print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info()[1]))
 
         if os.path.isabs(self.browser):
             #uninstall
