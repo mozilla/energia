@@ -1,6 +1,6 @@
 import platform
 import os
-import tmpfile
+import tempfile
 
 class Browser:
     def __init__(self, name, path, page, installURL):
@@ -42,7 +42,7 @@ class WinBrowser(Browser):
     def initialize(self):
         path = ""
         file = self.browser
-        tmpdir = tmpfile.mkdtemp()
+        tmpdir = tempfile.mkdtemp()
         installer_file = installerURL.split('/')[-1]
 
         try:
