@@ -3,14 +3,18 @@ import platform
 import shutil
 import os
 import multiprocessing
-import pandas
 import re
 import tempfile
 
 sys.path.append("..")
 
 from wrapper import Wrapper
-from pandas import DataFrame
+
+try:
+    import pandas
+    from pandas import DataFrame
+except:
+    pass
 
 get_long_path = lambda x: x
 try:

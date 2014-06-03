@@ -1,11 +1,19 @@
-from pandas import DataFrame
-from scipy import stats
+try:
+    nostats = False
+    from pandas import DataFrame
+    from scipy import stats
+except:
+    nostats = True
+    pass
 
 class Wrapper:
     def __init__(self, args):
         self._args = args
 
     def log(self):
+        if nostatus:
+            return
+
         df = DataFrame(columns=self._fields)
 
         for i in range(0, self._args.iterations):
@@ -14,6 +22,9 @@ class Wrapper:
         return self._compute_summary(df)
 
     def _compute_summary(self, df):
+        if nostats:
+            return
+
         df = df.convert_objects(convert_numeric=True)
         df, nfiltered = self._filter_outliers(df)
 
@@ -28,6 +39,9 @@ class Wrapper:
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
+        if nostats:
+            return
+
         length = len(df)
 
         if length <= 1:

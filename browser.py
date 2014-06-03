@@ -1,5 +1,6 @@
 import platform
 import os
+import tmpfile
 
 class Browser:
     def __init__(self, name, path, page, installURL):

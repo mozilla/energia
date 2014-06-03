@@ -12,8 +12,13 @@ from wrappers.BLA import BLA
 from wrappers.IPPET import IPPET
 from browser import Browser
 from time import sleep
-from pandas import DataFrame, concat
 from dispatcher import Dispatcher
+try:
+  from pandas import DataFrame, concat
+except:
+  # we need to support systems without this
+  def concat(inarray):
+    return inarray[1]
 
 class Benchmark:
     def __init__(self, args):

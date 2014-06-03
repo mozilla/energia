@@ -1,4 +1,3 @@
-import pandas
 import sys
 import os
 import shutil
@@ -12,8 +11,13 @@ except:
 sys.path.append("..")
 
 from wrapper import Wrapper
-from pandas import DataFrame
 from subprocess import Popen, PIPE
+
+try:
+    import pandas
+    from pandas import DataFrame
+except:
+    pass
 
 class BLA(Wrapper):
     def __init__(self, args):
