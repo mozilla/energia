@@ -45,7 +45,7 @@ class WinBrowser(Browser):
         file = self.browser
         tmpdir = tempfile.mkdtemp()
 #        installer_file = os.path.join(tmpdir, self.installURL.split('/')[-1])
-        installer_file = os.path.join('.', self.installURL.split('/')[-1])
+        installer_file = os.path.join(self.installURL.split('/')[-1])
 
         try:
             urllib.urlretrieve(self.installURL, installer_file)
