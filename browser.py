@@ -2,11 +2,12 @@ import platform
 import os
 
 class Browser:
-    def __init__(self, name, path, page):
+    def __init__(self, name, path, page, installURL):
         self.page = page
         self.browser = path
         self.description = name
         self.path = path
+        self.installURL = installURL
 
     def get_name(self):
         return self.description
@@ -21,39 +22,56 @@ class Browser:
         return platform.system()
 
     @staticmethod
-    def create_browser(name, path, page):
+    def create_browser(name, path, page, installURL):
         os = platform.system()
 
         if os == "Linux":
-            return UbuntuBrowser(name, path, page)
+            return UbuntuBrowser(name, path, page, installURL)
         elif os == "Darwin":
-            return OSXBrowser(name, path, page)
+            return OSXBrowser(name, path, page, installURL)
         elif os == "Windows":
-            return WinBrowser(name, path, page)
+            return WinBrowser(name, path, page, installURL)
         else:
             assert(0)
 
 class WinBrowser(Browser):
-    def __init__(self, name, path, page):
-        super().__init__(name, path, page)
+    def __init__(self, name, path, page, installURL):
+        super().__init__(name, path, page, installURL)
 
     def initialize(self):
         path = ""
         file = self.browser
+        tmpdir = tmpfile.mkdtemp()
+        installer_file = installerURL.split('/')[-1]
+
+        try:
+            urllib.urlretrieve(installURL, tmpdir)
+        except Exception, e:
+            print "Exception while getting url: %s" % e
+
+        if os.path.isabs(self.browser):
+            #uninstall
+            os.system('%s\\%s /S' % (tmpdir, installer_file))
+
+        if os.path.isabs(self.browser):
+            print "Error, this should be uninstalled by now"
+
+        os.system('%s\\%s -ms' % (tmpdir, installer_file))
 
         if os.path.isabs(self.browser):
             drive, path_and_file = os.path.splitdrive(self.browser)
             path, file = os.path.split(path_and_file)
 
         # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
+        # TODO: consider using mozprocess here
         os.system("start /D \"" + path + "\" " + file + " " + self.page)
 
     def finalize(self):
         os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
 
 class OSXBrowser(Browser):
-    def __init__(self, name, path, page):
-        super().__init__(name, path, page)
+    def __init__(self, name, path, page, installURL):
+        super().__init__(name, path, page, installURL)
 
     def initialize(self):
         if self.description == "Safari":
@@ -65,8 +83,8 @@ class OSXBrowser(Browser):
         os.system('osascript -e \"tell application \\\"' + self.browser + '\\\" to quit\"')
 
 class UbuntuBrowser(Browser):
-    def __init__(self, name, path, page):
-        super().__init__(name, path, page)
+    def __init__(self, name, path, page, installURL):
+        super().__init__(name, path, page, installURL)
 
     def initialize(self):
         os.system(self.browser + " " + self.page + "&")
