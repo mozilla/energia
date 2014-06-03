@@ -45,11 +45,12 @@ class WinBrowser(Browser):
         path = ""
         file = self.browser
         tmpdir = tempfile.mkdtemp()
-#        installer_file = os.path.join(tmpdir, self.installURL.split('/')[-1])
-        installer_file = os.path.join(self.installURL.split('/')[-1])
+        installer_file = os.path.join(tmpdir, self.installURL.split('/')[-1])
+#        installer_file = os.path.join(self.installURL.split('/')[-1])
 
         try:
-            urllib.urlretrieve(self.installURL, installer_file)
+            # NOTE: .request is needed for python3
+            urllib.request.urlretrieve(self.installURL, installer_file)
         except Exception:
             print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info()[1]))
 
