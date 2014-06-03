@@ -1,6 +1,7 @@
 import platform
 import os
 import tempfile
+import urllib
 
 class Browser:
     def __init__(self, name, path, page, installURL):
