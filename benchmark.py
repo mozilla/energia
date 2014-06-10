@@ -15,6 +15,7 @@ from time import sleep
 from pandas import DataFrame, concat
 from dispatcher import Dispatcher
 
+
 class Benchmark:
     def __init__(self, args):
         self._args = args
@@ -23,6 +24,20 @@ class Benchmark:
             self._config = json.load(f)
 
     def log(self):
+
+        if self._args.collect_interval:  # if user elected to store interval data, create directory
+            if platform.system() == "Windows":
+                directory = os.getcwd() + "\\" + self._args.interval_directory
+            else:
+                directory = os.getcwd() + "/" + self._args.interval_directory
+
+            self._args.directory = directory
+
+            try:
+                os.stat(directory)
+            except:
+                os.mkdir(directory)  # creates the directory in which all IPPET data will be saved
+
         df = None
         for page in self._get_pages():
             for browser in self._get_browsers():
@@ -40,7 +55,7 @@ class Benchmark:
 
         for benchmark in self._get_benchmarks():
             try:
-                benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
+                benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name(), page)
                 partial = self._run_benchmark(benchmark, browser, partial)
             except:
                 print("Warning: benchmark {} not supported".format(benchmark))
@@ -59,13 +74,13 @@ class Benchmark:
         return res
 
     @staticmethod
-    def _create_benchmark(benchmark, args, browser):
+    def _create_benchmark(benchmark, args, browser, page):
         if benchmark == "PowerGadget":
             return PowerGadget(args)
         elif benchmark == "BLA":
             return BLA(args)
         elif benchmark == "IPPET":
-            return IPPET(args, browser)  # IPPET uses only browser process data
+            return IPPET(args, browser, page)  # IPPET uses browser process and page data
         else:
             raise Exception("Benchmark not found")
 
@@ -116,11 +131,13 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--is_dispatcher", help="Set if this instance is a dispatcher", dest="is_dispatcher", action="store_true")
     parser.add_argument("-w", "--is_worker", help="Set if this instance is a worker", dest="is_worker", action="store_true")
     parser.add_argument("-a", "--address", help="Dispatcher address", default=None)
+    parser.add_argument("-t", "--collect_interval", help="Set if it is desired to store the entire interval data to desktop", action="store_true")
 
     parser.set_defaults(is_dispatcher=False)
     parser.set_defaults(is_worker=False)
 
     args = parser.parse_args()
+    args.interval_directory = "interval_data\\"
     args.image = None
     df = None
 
