@@ -24,10 +24,12 @@ class IPPET(Wrapper):
     _tot_cpu = "Total CPU Watts"
     _tot_gpu = "Total GPU Watts"
 
-    def __init__(self, args, browser):
+    def __init__(self, args, browser, page):
         super().__init__(args)
 
+        # the browser is used to specify file extension; thus, one word is requisite
         self.browser = browser
+        self.page = page
         self._fields = [self._tot_cpu, self._tot_gpu, self._avg_gpu, self._avg_cpu]
         self._system = platform.system()
 
@@ -55,7 +57,8 @@ class IPPET(Wrapper):
             # 2nd: z: do not zip files
             # 3rd: log_dir; file names are already specified
             # 4th: time_end: time interval for which it will run
-            os.system("{} -enable_web {} -z {} -log_dir {} -time_end {} > NUL 2>&1".format(
+
+            os.system(" {} -enable_web {} -z {} -log_dir {} -time_end {} > NUL 2>&1".format(
                       self._tool, "n", "n", self._logfile, str(self._args.duration)))
         else:
             raise Exception("IPPET does not support your operating system")
@@ -73,70 +76,69 @@ class IPPET(Wrapper):
             raise Exception("IPPET failed to generate a valid logfile")
             return sys.exit(-1)
 
-
         assert(summary[self._tot_cpu] > 0)
-        shutil.rmtree(self._logfile)  # deletes the data file
+        if self._args.collect_interval:
+            try:
+                # rename the file to specify the browser
+                src = self._logfile + "\\" + self.browser.replace(" ", "") + str(self.current_iteration) + "_ippet_log_processes.xls"
+                dest = self._args.directory + self.page + "\\"
+                os.rename(self._logfile + "ippet_log_processes.xls", src)
 
+                try:
+                    os.stat(dest)
+                except:
+                    os.mkdir(dest)  # create page-specific directory for data
+
+                shutil.copy(src, dest)  # copy IPPET data to specified directory for future retrieval
+
+            except Exception:
+                raise Exception("IPPET encountered problem during file save.")
+
+        shutil.rmtree(self._logfile)  # deletes the data file
         return summary
 
     def parse_data(self, ippet_data):
-            """
-            This method takes the raw IPPET Log Data and returns a
-            list of lists - each being a column from the original input.
-            """
+        """
+        This method takes the raw IPPET Log Data and returns a
+        list of lists - each being a column from the original input.
+        """
+        ippet_data = "".join(ippet_data).replace("\n", "\t").split("\t")  # input is assumed TSV
 
-            ippet_data = "".join(ippet_data)  # for the case of a list input
+        data = []
+        column_count = 0
+        column_iterator = 0
+        is_collecting_columns = True
 
-            data_columns = []
-            current_entry = ""
-            is_complete_entry = False
-            is_gathering_columns = True
-            column_count = 0
-            column_iterator = 0
+        for entry in ippet_data:
+            if entry and not entry[0].isdigit() and is_collecting_columns:
+                entry = entry.replace("\\\.\\", "").replace("\\", " ").replace('"', "")  # clean column
+                data.append([entry])
+            elif entry and entry[0].isdigit():
+                if is_collecting_columns:
+                    column_count = len(data)
+                    is_collecting_columns = False
+                
+                if self.browser in data[column_iterator % column_count][0]:  # only collect relevant info.
+                    data[column_iterator % column_count].append(float(entry))
+                    
+                column_iterator += 1  # increment for next column entry
 
-            for entry in ippet_data:  # each "entry" is a character from the input
-                if is_gathering_columns:  # column names are collected; each is within quotes
-                    if current_entry == "" and entry != '"' and entry != "(" and entry != "\t":
-                        is_gathering_columns = False  # name collection is complete, now populate
-                        column_count -= 1  # solves 0-index problem
-                    elif entry == '"' and is_complete_entry:
-                        data_columns.append([current_entry])  # full name found; store it now
-                        column_count += 1
-                        current_entry = ""  # reset to empty string for new name
-                        is_complete_entry = False  # next quote will begin entry
-                    elif entry == '"' and not is_complete_entry:
-                        is_complete_entry = True  # next quote will end entry
-                    else:
-                        current_entry += entry
-                else:  # now, populate columns
-                    if entry == "\t":  # entries are separated by a tab
-                        if self.browser in data_columns[column_iterator % column_count][0]:
-                            data_columns[column_iterator % column_count].append(float(current_entry))  # browser data
+        # here, 10 was chosen arbitrarily but meant to identify invalid files
+        if column_count < 10 or column_iterator == 0 or column_iterator % column_count != 0:
+              raise Exception("Column collection does not match count, the file is assumed invalid.")
 
-                        column_iterator += 1  # increment for next column entry
-                        current_entry = ""  # reset to empty string for next entry
-
-                        if column_iterator >= column_count:
-                            column_iterator = 0  # reset to zero
-                    else:
-                        current_entry += entry  # append next digit to entry
-
-            if column_count == 0:
-                raise Exception("No data columns were found, the file is assumed invalid.")
-
-            return self.get_browser_process_data(data_columns)
+        return self.get_browser_process_data(data)  
 
     def get_browser_process_data(self, data_columns):
         """
         The sum of current browser-specific data is returned.
         """
-
         browser_data = {self._tot_cpu: 0, self._tot_gpu: 0, self._avg_cpu: 0, self._avg_gpu: 0}
 
         for column in data_columns:
             if self.browser in column[0] and len(column) > 1:  # IPPET format is used to extract process names
-
                 data_type = column[0][column[0].index(')')+2:]  # remove end paren and space
+
                 if data_type == "CPU Power W":
                     browser_data[self._tot_cpu] += sum(column[1:])
                 elif data_type == "GPU Power W":
@@ -147,4 +149,3 @@ class IPPET(Wrapper):
                     browser_data[self._avg_cpu] += 0 if len(column[1:]) == 0 else sum(column[1:]) / len(column[1:])
 
         return browser_data
-
