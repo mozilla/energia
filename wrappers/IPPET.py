@@ -27,7 +27,6 @@ class IPPET(Wrapper):
     def __init__(self, args, browser, page):
         super().__init__(args)
 
-        # the browser is used to specify file extension; thus, one word is requisite
         self.browser = browser
         self.page = page
         self._fields = [self._tot_cpu, self._tot_gpu, self._avg_gpu, self._avg_cpu]
