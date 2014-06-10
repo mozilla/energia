@@ -9,6 +9,7 @@ class Wrapper:
         df = DataFrame(columns=self._fields)
 
         for i in range(0, self._args.iterations):
+            self.current_iteration = i  # allows for proper interval-file naming
             df = self._run_iteration(df)
 
         return self._compute_summary(df)
