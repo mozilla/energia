@@ -11,7 +11,7 @@ class Wrapper:
         self._args = args
 
     def log(self):
-        if nostatus:
+        if nostats:
             return
 
         df = DataFrame(columns=self._fields)
