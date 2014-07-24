@@ -50,9 +50,10 @@ class Benchmark:
                 print("JMAHER: got benchmark, going to run it")
                 partial = self._run_benchmark(benchmark, browser, partial)
                 print("JMAHER: ran benchmark, lets move on")
-            except Exception, e:
+            except Exception as e:
                 import sys
                 print("JMAHER: exception found: %s" % sys.exc_info()[0])
+                print("JMAHER: e: %s" % e)
                 print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
