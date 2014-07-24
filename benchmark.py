@@ -45,8 +45,11 @@ class Benchmark:
 
         for benchmark in self._get_benchmarks():
             try:
+                print("JMAHER: creating benchmark")
                 benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
+                print("JMAHER: got benchmark, going to run it")
                 partial = self._run_benchmark(benchmark, browser, partial)
+                print("JMAHER: ran benchmark, lets move on")
             except:
                 print("Warning: benchmark {} not supported".format(benchmark))
 

@@ -6,7 +6,7 @@ import threading
 import functools
 
 try:
-    nosats = False
+    nostats = False
     from pandas import DataFrame
 except:
     nostats = True
