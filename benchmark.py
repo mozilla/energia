@@ -50,19 +50,24 @@ class Benchmark:
                 print("JMAHER: got benchmark, going to run it")
                 partial = self._run_benchmark(benchmark, browser, partial)
                 print("JMAHER: ran benchmark, lets move on")
-            except:
+            except Exception, e:
+                import sys
+                print("JMAHER: exception found: %s" % sys.exc_info()[0])
                 print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
         return partial if df is None else concat([df, partial])
 
     def _run_benchmark(self, benchmark, browser, partial):
+        print("JMAHER: top of run benchmark")
         df = benchmark.log()
         df['Browser'] = browser.get_name()
         df['Page'] = browser.get_page()
         df['OS'] = browser.get_os()
+        print("jmaher, browser: %s, page, %s, os: %s" % df['Browser'], df['Page'], df['OS'])
 
         res = df if partial is None else partial.combine_first(df)
+        print("JMAHER: finished partial.combine_first")
 
         return res
 
