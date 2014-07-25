@@ -54,7 +54,7 @@ class Benchmark:
                 import sys
                 print("JMAHER: exception found: %s" % sys.exc_info()[0])
                 print("JMAHER: e: %s" % e)
-                print("Warning: benchmark {} not supported".format(benchmark))
+#                print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
         return partial if df is None else concat([df, partial])
