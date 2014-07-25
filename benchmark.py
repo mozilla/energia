@@ -53,6 +53,7 @@ class Benchmark:
             except Exception as e:
                 import sys
                 print("JMAHER: exception found: %s" % sys.exc_info()[0])
+                print("JMAHER: exception found: %s" % sys.exc_info()[1])
                 print("JMAHER: e: %s" % e)
 #                print("Warning: benchmark {} not supported".format(benchmark))
 
@@ -62,6 +63,8 @@ class Benchmark:
     def _run_benchmark(self, benchmark, browser, partial):
         print("JMAHER: top of run benchmark")
         df = benchmark.log()
+        print("JMAHER: in run benchmark, finished log()")
+        print(df)
         df['Browser'] = browser.get_name()
         df['Page'] = browser.get_page()
         df['OS'] = browser.get_os()
