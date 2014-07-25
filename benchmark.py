@@ -33,7 +33,11 @@ class Benchmark:
             for browser in self._get_browsers():
                 df = self._run_iteration(df, page, browser)
 
-        return df.sort(['OS', 'Page', 'Browser'])
+        retVal = df.sort(['OS', 'Page', 'Browser'])
+        print("JMAHER: in benchmark.log, going to return")
+        print(retVal)
+        print("JMAHER: return now")
+        return retVal
 
     def _run_iteration(self, df, page, browser):
         browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page, installURL=browser["url"])
@@ -47,32 +51,26 @@ class Benchmark:
             try:
                 print("JMAHER: creating benchmark")
                 benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
-                print("JMAHER: got benchmark, going to run it")
                 partial = self._run_benchmark(benchmark, browser, partial)
                 print("JMAHER: ran benchmark, lets move on")
             except Exception as e:
                 import sys
                 print("JMAHER: exception found: %s" % sys.exc_info()[0])
-                print("JMAHER: exception found: %s" % sys.exc_info()[1])
-                print("JMAHER: e: %s" % e)
-#                print("Warning: benchmark {} not supported".format(benchmark))
+                print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
-        return partial if df is None else concat([df, partial])
+        retVal = partial if df is None else concat([df, partial])
+        print("JMAHER: returning %s" % retVal)
+        return retVal
 
     def _run_benchmark(self, benchmark, browser, partial):
         print("JMAHER: top of run benchmark")
         df = benchmark.log()
-        print("JMAHER: in run benchmark, finished log()")
-        print(df)
         df['Browser'] = browser.get_name()
         df['Page'] = browser.get_page()
         df['OS'] = browser.get_os()
-        print("JMAHER, set browser,page,os")
 
         res = df if partial is None else partial.combine_first(df)
-        print("JMAHER: finished partial.combine_first")
-
         return res
 
     @staticmethod
@@ -163,12 +161,8 @@ if __name__ == "__main__":
             raise Exception("Benchmark not found")
 
         df = benchmark.log()
-        print("JMAHER: finished benchmark.log")
-        print(df)
-        print("JMAHER: onto the next bits")
 
     if df is not None:
-        print("JMAHER: going t ocall df.to_csv")
         df.to_csv(args.output, float_format="%.3f")
     else:
         print("Warning: no output produced")

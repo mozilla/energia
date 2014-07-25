@@ -20,9 +20,6 @@ class Wrapper:
             df = self._run_iteration(df)
 
         retVal = self._compute_summary(df)
-        print("JMAHER: finished compute summary")
-        print(retVal)
-        print("JMAHER: leaving wrapper::log")
         return retVal
 
     def _compute_summary(self, df):
@@ -40,9 +37,6 @@ class Wrapper:
 
         summary["Iterations"] = self._args.iterations - nfiltered
         summary["Duration"] = self._args.duration
-        print("JMAHER: end of compute_summary")
-        print(summary)
-        print("JMAHER: time to leave compute_summary")
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
