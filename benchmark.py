@@ -160,8 +160,12 @@ if __name__ == "__main__":
             raise Exception("Benchmark not found")
 
         df = benchmark.log()
+        print("JMAHER: finished benchmark.log")
+        print(df)
+        print("JMAHER: onto the next bits")
 
     if df is not None:
+        print("JMAHER: going t ocall df.to_csv")
         df.to_csv(args.output, float_format="%.3f")
     else:
         print("Warning: no output produced")
