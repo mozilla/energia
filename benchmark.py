@@ -68,7 +68,7 @@ class Benchmark:
         df['Browser'] = browser.get_name()
         df['Page'] = browser.get_page()
         df['OS'] = browser.get_os()
-        print("jmaher, browser: %s, page, %s, os: %s" % df['Browser'], df['Page'], df['OS'])
+        print("JMAHER, set browser,page,os")
 
         res = df if partial is None else partial.combine_first(df)
         print("JMAHER: finished partial.combine_first")
