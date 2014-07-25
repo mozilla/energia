@@ -37,6 +37,8 @@ class Wrapper:
         summary["Iterations"] = self._args.iterations - nfiltered
         summary["Duration"] = self._args.duration
         print("JMAHER: end of compute_summary")
+        print(summary)
+        print("JMAHER: time to leave compute_summary")
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
