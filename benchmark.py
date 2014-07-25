@@ -112,7 +112,11 @@ class ClientBenchmark(Benchmark):
             print("Processing request for {} on {}".format(page, browser["name"]))
             df = self._run_iteration(None, page, browser)
             print("JMAHER: in client benchmark::log, going to gather")
-            self._gather_socket.send(pickle.dumps(df))
+            pd = pickle.dumps(df)
+            print("JMAHER: generated pd")
+            print(pd)
+            print("JMAHER: send pd")
+            self._gather_socket.send(pd)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Desktop Browser Power benchmarking Utility",
