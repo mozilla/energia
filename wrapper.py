@@ -19,7 +19,11 @@ class Wrapper:
         for i in range(0, self._args.iterations):
             df = self._run_iteration(df)
 
-        return self._compute_summary(df)
+        retVal = self._compute_summary(df)
+        print("JMAHER: finished compute summary")
+        print(retVal)
+        print("JMAHER: leaving wrapper::log")
+        return retVal
 
     def _compute_summary(self, df):
         if nostats:
