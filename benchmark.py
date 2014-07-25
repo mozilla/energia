@@ -35,8 +35,6 @@ class Benchmark:
 
         retVal = df.sort(['OS', 'Page', 'Browser'])
         print("JMAHER: in benchmark.log, going to return")
-        print(retVal)
-        print("JMAHER: return now")
         return retVal
 
     def _run_iteration(self, df, page, browser):
@@ -60,7 +58,6 @@ class Benchmark:
 
         browser.finalize()
         retVal = partial if df is None else concat([df, partial])
-        print("JMAHER: returning %s" % retVal)
         return retVal
 
     def _run_benchmark(self, benchmark, browser, partial):
@@ -114,6 +111,7 @@ class ClientBenchmark(Benchmark):
 
             print("Processing request for {} on {}".format(page, browser["name"]))
             df = self._run_iteration(None, page, browser)
+            print("JMAHER: in client benchmark::log, going to gather")
             self._gather_socket.send(pickle.dumps(df))
 
 if __name__ == "__main__":

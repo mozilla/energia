@@ -20,6 +20,7 @@ class Wrapper:
             df = self._run_iteration(df)
 
         retVal = self._compute_summary(df)
+        print("JMAHER: returning from wrapper::log")
         return retVal
 
     def _compute_summary(self, df):
