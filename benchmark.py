@@ -13,12 +13,7 @@ from wrappers.IPPET import IPPET
 from browser import Browser
 from time import sleep
 from dispatcher import Dispatcher
-try:
-  from pandas import DataFrame, concat
-except:
-  # we need to support systems without this
-  def concat(inarray):
-    return inarray[1]
+from pandas import DataFrame, concat
 
 class Benchmark:
     def __init__(self, args):
@@ -34,7 +29,6 @@ class Benchmark:
                 df = self._run_iteration(df, page, browser)
 
         retVal = df.sort(['OS', 'Page', 'Browser'])
-        print("JMAHER: in benchmark.log, going to return")
         return retVal
 
     def _run_iteration(self, df, page, browser):
@@ -47,13 +41,9 @@ class Benchmark:
 
         for benchmark in self._get_benchmarks():
             try:
-                print("JMAHER: creating benchmark")
                 benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
                 partial = self._run_benchmark(benchmark, browser, partial)
-                print("JMAHER: ran benchmark, lets move on")
             except Exception as e:
-                import sys
-                print("JMAHER: exception found: %s" % sys.exc_info()[0])
                 print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
@@ -61,7 +51,6 @@ class Benchmark:
         return retVal
 
     def _run_benchmark(self, benchmark, browser, partial):
-        print("JMAHER: top of run benchmark")
         df = benchmark.log()
         df['Browser'] = browser.get_name()
         df['Page'] = browser.get_page()
@@ -111,12 +100,7 @@ class ClientBenchmark(Benchmark):
 
             print("Processing request for {} on {}".format(page, browser["name"]))
             df = self._run_iteration(None, page, browser)
-            print("JMAHER: in client benchmark::log, going to gather")
-            pd = pickle.dumps(df)
-            print("JMAHER: generated pd")
-            print(pd)
-            print("JMAHER: send pd")
-            self._gather_socket.send(pd)
+            self._gather_socket.send(pickle.dumps(df))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Desktop Browser Power benchmarking Utility",
@@ -168,3 +152,6 @@ if __name__ == "__main__":
         df.to_csv(args.output, float_format="%.3f")
     else:
         print("Warning: no output produced")
+
+    import sys
+    sys.exit()

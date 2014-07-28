@@ -5,11 +5,7 @@ import os
 import threading
 import functools
 
-try:
-    nostats = False
-    from pandas import DataFrame
-except:
-    nostats = True
+from pandas import DataFrame
     
 _context = zmq.Context()
 
@@ -65,9 +61,6 @@ class Dispatcher:
                             print("Warning: no {} workers reachable, retrying...".format(os))
 
     def _gather(self):
-        if nostats: 
-            return None
-
         df = DataFrame()
         nmsg = len(self._config["Pages"]) * len(self._config["OS"])
         nrcv = 0

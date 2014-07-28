@@ -1,32 +1,20 @@
-try:
-    nostats = False
-    from pandas import DataFrame
-    from scipy import stats
-except:
-    nostats = True
-    pass
+from pandas import DataFrame
+from scipy import stats
 
 class Wrapper:
     def __init__(self, args):
         self._args = args
 
     def log(self):
-        if nostats:
-            return
-
         df = DataFrame(columns=self._fields)
 
         for i in range(0, self._args.iterations):
             df = self._run_iteration(df)
 
         retVal = self._compute_summary(df)
-        print("JMAHER: returning from wrapper::log")
         return retVal
 
     def _compute_summary(self, df):
-        if nostats:
-            return
-
         df = df.convert_objects(convert_numeric=True)
         df, nfiltered = self._filter_outliers(df)
 
@@ -41,9 +29,6 @@ class Wrapper:
         return DataFrame(summary, index=[0])
 
     def _filter_outliers(self, df):
-        if nostats:
-            return
-
         length = len(df)
 
         if length <= 1:
