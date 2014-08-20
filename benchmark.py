@@ -32,6 +32,8 @@ class Benchmark:
         return retVal
 
     def _run_iteration(self, df, page, browser):
+        if 'url' not in browser:
+            browser['url'] = ''
         browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page, installURL=browser["url"])
         args.image = os.path.basename(browser.get_path())
         browser.initialize()

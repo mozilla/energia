@@ -45,35 +45,37 @@ class WinBrowser(Browser):
         path = ""
         file = self.browser
         tmpdir = tempfile.mkdtemp()
-        installer_file = os.path.join(tmpdir, self.installURL.split('/')[-1])
-#        installer_file = os.path.join(self.installURL.split('/')[-1])
+        if self.installURL:
+            installer_file = os.path.join(tmpdir, self.installURL.split('/')[-1])
 
-        try:
-            # NOTE: .request is needed for python3
-            urllib.request.urlretrieve(self.installURL, installer_file)
-        except Exception:
-            print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info()[1]))
+            try:
+                # NOTE: .request is needed for python3
+                urllib.request.urlretrieve(self.installURL, installer_file)
+            except Exception:
+                print("Exception while getting url: {}, {}".format(self.installURL, sys.exc_info()[1]))
 
-        if os.path.isabs(self.browser):
-            #uninstall
-            os.system(installer_file + ' /S')
-            print("Uninstalling old browser")
+            if os.path.isabs(self.browser):
+                #uninstall
+                os.system(installer_file + ' /S')
+                print("Uninstalling old browser")
 
-        if os.path.isabs(self.browser):
-            print("Error, this should be uninstalled by now")
+            if os.path.isabs(self.browser):
+                print("Error, this should be uninstalled by now")
 
-        os.system(installer_file + ' -ms')
-        print("Installing new browser {}".format(installer_file))
+            os.system(installer_file + ' -ms')
+            print("Installing new browser {}".format(installer_file))
 
-        if os.path.isabs(self.browser):
-            drive, path_and_file = os.path.splitdrive(self.browser)
-            path, file = os.path.split(path_and_file)
+            if os.path.isabs(self.browser):
+                drive, path_and_file = os.path.splitdrive(self.browser)
+                path, file = os.path.split(path_and_file)
 
+# adding -setDefaultBrowswer might be needed for firefox, but fails for IE
+#        cmd = "start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page
+        cmd = "start /D \"" + path + "\" " + file + " " + self.page
+        print("going to execute: %s" % cmd)
         # We can't use Popen... terminate() doesn't shutdown the FF properly among all OSs
         # TODO: consider using mozprocess here
-        print("going to execute: start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page)
-        os.system("start /D \"" + path + "\" " + file + " -setDefaultBrowser " + self.page)
-        print("started the browser, onto real tasks")
+        os.system(cmd)
 
     def finalize(self):
         os.system("taskkill /im " + self.browser + ".exe > NUL 2>&1")
