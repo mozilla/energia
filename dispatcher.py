@@ -63,7 +63,7 @@ class Dispatcher:
 
     def _gather(self):
         df = DataFrame()
-        nmsg = len(self._config["Pages"]) * len(self._config["OS"])
+        nmsg = len(self._config["Pages"]) * len(self._config["OS"]) * len(self._get_browsers(os))
         nrcv = 0
 
         #TODO: Handle missing data
