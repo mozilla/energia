@@ -29,6 +29,7 @@ class Benchmark:
                 df = self._run_iteration(df, page, browser)
 
         retVal = df.sort(['OS', 'Page', 'Browser'])
+        print("JMAHER: df retval: %s" % retVal)
         return retVal
 
     def _run_iteration(self, df, page, browser):
@@ -50,6 +51,7 @@ class Benchmark:
 
         browser.finalize()
         retVal = partial if df is None else concat([df, partial])
+        print("JMAHER: run iteration done, retval: %s" % retVal)
         return retVal
 
     def _run_benchmark(self, benchmark, browser, partial):

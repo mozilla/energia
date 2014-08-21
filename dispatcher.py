@@ -30,7 +30,8 @@ class Dispatcher:
         df = self._gather()
         scatter.join()
         if os.path.exists(self._tmp_file):
-            os.remove(self._tmp_file)
+            print("JMAHER: tmp_FILE: %s" % self._tmp_file)
+#            os.remove(self._tmp_file)
         return df
 
     def _create_scatter_socket(self, os):
