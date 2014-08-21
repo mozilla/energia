@@ -26,8 +26,12 @@ class Benchmark:
         df = None
         for page in self._get_pages():
             for browser in self._get_browsers():
+                print("JMAHER: running page %s, browser %s, and df is: %s" % (page, browser, df))
                 df = self._run_iteration(df, page, browser)
+                print("JMAHER: done with run iteration")
+            print("JMAHER: done with browsers for page %s" % page)
 
+        print("JMAHER: done with pages")
         retVal = df.sort(['OS', 'Page', 'Browser'])
         print("JMAHER: df retval: %s" % retVal)
         return retVal
@@ -104,6 +108,8 @@ class ClientBenchmark(Benchmark):
 
             print("Processing request for {} on {}".format(page, browser["name"]))
             df = self._run_iteration(None, page, browser)
+            print("JMAHER: ran client benchmark and run iteration, how socket send")
+            print(pickle.dumps(df))
             self._gather_socket.send(pickle.dumps(df))
 
 if __name__ == "__main__":
