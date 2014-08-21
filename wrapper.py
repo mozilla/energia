@@ -9,9 +9,7 @@ class Wrapper:
         df = DataFrame(columns=self._fields)
 
         for i in range(0, self._args.iterations):
-            print("JMAHER: in wrapper::log, going to run iteration")
             df = self._run_iteration(df)
-            print("JMAHER: in wrapper::log, done with run iteration")
 
         retVal = self._compute_summary(df)
         return retVal
