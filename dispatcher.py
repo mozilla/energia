@@ -64,7 +64,7 @@ class Dispatcher:
     def _gather(self):
         df = DataFrame()
         num_browsers = 0
-        for os in self.config["OS"]:
+        for os in self._config["OS"]:
             num_browsers = num_browsers + self._get_browsers(os)
         nmsg = len(self._config["Pages"]) * num_browsers
         nrcv = 0
