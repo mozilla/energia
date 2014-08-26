@@ -1,13 +1,1 @@
-{
-  "OS": {
-    "Windows": [
-      {"name": "Firefox", "path": "firefox", "url": "http://ftp.mozilla.org/pub/mozilla.org/firefox/try-builds/jmaher@mozilla.com-f379a63483b7/try-win32/firefox-32.0a1.en-US.win32.installer.exe"}
-    ]
-  },
-
-  "Benchmarks": ["PowerGadget"],
-
-  "Pages": ["about:blank", "www.youtube.com", "www.yahoo.com", "www.amazon.com",
-            "www.ebay.com", "www.google.com", "www.facebook.com", "www.wikipedia.com",
-            "www.craigslist.com"]
-}
+{"OS": {"Windows": [{"url": "http://ftp.mozilla.org/pub/mozilla.org/firefox/nightly/latest-mozilla-central/firefox-34.0a1.en-US.win32.installer.exe", "path": "firefox", "name": "Firefox"}, {"path": "iexplore", "name": "Internet Explorer"}]}, "Pages": ["about:blank", "www.youtube.com", "www.yahoo.com", "www.amazon.com", "www.ebay.com", "www.google.com", "www.facebook.com", "www.wikipedia.com", "www.craigslist.com"], "Benchmarks": ["PowerGadget"]}
