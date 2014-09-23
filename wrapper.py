@@ -11,8 +11,7 @@ class Wrapper:
         for i in range(0, self._args.iterations):
             df = self._run_iteration(df)
 
-        retVal = self._compute_summary(df)
-        return retVal
+        return self._compute_summary(df)
 
     def _compute_summary(self, df):
         df = df.convert_objects(convert_numeric=True)

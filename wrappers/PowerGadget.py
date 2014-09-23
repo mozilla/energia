@@ -1,3 +1,4 @@
+import pandas
 import sys
 import platform
 import shutil
@@ -9,12 +10,7 @@ import tempfile
 sys.path.append("..")
 
 from wrapper import Wrapper
-
-try:
-    import pandas
-    from pandas import DataFrame
-except:
-    pass
+from pandas import DataFrame
 
 get_long_path = lambda x: x
 try:

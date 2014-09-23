@@ -12,8 +12,8 @@ from wrappers.BLA import BLA
 from wrappers.IPPET import IPPET
 from browser import Browser
 from time import sleep
-from dispatcher import Dispatcher
 from pandas import DataFrame, concat
+from dispatcher import Dispatcher
 
 class Benchmark:
     def __init__(self, args):
@@ -28,8 +28,7 @@ class Benchmark:
             for browser in self._get_browsers():
                 df = self._run_iteration(df, page, browser)
 
-        retVal = df.sort(['OS', 'Page', 'Browser'])
-        return retVal
+        return df.sort(['OS', 'Page', 'Browser'])
 
     def _run_iteration(self, df, page, browser):
         if 'url' not in browser:
@@ -45,12 +44,11 @@ class Benchmark:
             try:
                 benchmark = Benchmark._create_benchmark(benchmark, self._args, browser.get_name())
                 partial = self._run_benchmark(benchmark, browser, partial)
-            except Exception as e:
+            except:
                 print("Warning: benchmark {} not supported".format(benchmark))
 
         browser.finalize()
-        retVal = partial if df is None else concat([df, partial])
-        return retVal
+        return partial if df is None else concat([df, partial])
 
     def _run_benchmark(self, benchmark, browser, partial):
         df = benchmark.log()
@@ -59,6 +57,7 @@ class Benchmark:
         df['OS'] = browser.get_os()
 
         res = df if partial is None else partial.combine_first(df)
+
         return res
 
     @staticmethod
@@ -155,5 +154,3 @@ if __name__ == "__main__":
     else:
         print("Warning: no output produced")
 
-    import sys
-    sys.exit()
