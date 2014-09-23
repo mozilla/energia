@@ -1,9 +1,9 @@
-import pandas
 import sys
 import platform
 import shutil
 import os
 import multiprocessing
+import pandas
 import re
 import tempfile
 
