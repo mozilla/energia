@@ -46,7 +46,9 @@ class Benchmark:
         return df.sort(['OS', 'Page', 'Browser'])
 
     def _run_iteration(self, df, page, browser):
-        browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page)
+        if 'url' not in browser:
+            browser['url'] = ''
+        browser = Browser.create_browser(name=browser["name"], path=browser["path"], page=page, installURL=browser["url"])
         args.image = os.path.basename(browser.get_path())
         browser.initialize()
         partial = None
@@ -168,3 +170,4 @@ if __name__ == "__main__":
         df.to_csv(args.output, float_format="%.3f")
     else:
         print("Warning: no output produced")
+

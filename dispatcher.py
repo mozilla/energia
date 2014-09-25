@@ -5,8 +5,8 @@ import os
 import threading
 import functools
 
-from pandas import DataFrame, concat
-
+from pandas import DataFrame
+    
 _context = zmq.Context()
 
 class Dispatcher:
@@ -29,7 +29,8 @@ class Dispatcher:
         scatter.start()
         df = self._gather()
         scatter.join()
-        os.remove(self._tmp_file)
+        if os.path.exists(self._tmp_file):
+            os.remove(self._tmp_file)
         return df
 
     def _create_scatter_socket(self, os):
@@ -61,7 +62,10 @@ class Dispatcher:
 
     def _gather(self):
         df = DataFrame()
-        nmsg = len(self._config["Pages"]) * len(self._config["OS"])
+        num_browsers = 0
+        for os in self._config["OS"]:
+            num_browsers = num_browsers + len(self._get_browsers(os))
+        nmsg = len(self._config["Pages"]) * num_browsers
         nrcv = 0
 
         #TODO: Handle missing data
